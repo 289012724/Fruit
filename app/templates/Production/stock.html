@@ -1,0 +1,202 @@
+{% import "Production/macro.html" as pro_mac %}
+<form id="stock-form" class="form-horizontal" role="form" method="POST">
+    <input type="hidden" name="unit" id="unit" value="箱"/>
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+        {{ pro_mac.pro_form(form.name.label,form.name,1) }}
+        {{ pro_mac.pro_form(form.brand_id.label,form.brand_id) }}
+    </div>
+    <div class="form-group">
+        {{ pro_mac.pro_form(form.standard.label,form.standard) }}
+        {{ pro_mac.pro_form(form.category.label,form.category,1) }}
+    </div>
+    <div class="form-group">
+        {{ pro_mac.pro_form(form.number.label,form.number,1) }}
+        {{ pro_mac.pro_form(form.price.label,form.price,1) }}
+    </div>
+    <div class="form-group">
+        {{ pro_mac.pro_form(form.tickets.label,form.tickets,1) }}
+        {{ pro_mac.pro_form(form.car_number.label,form.car_number) }}
+    </div>
+    <div>
+     <div class="form-group">
+        	<div class="col-sm-2">
+        		{{ form.support_id.label(class="label-control")}}
+        	</div>
+        	<div class="col-sm-6">
+        		<input id="stock_support_id" name="support_id" style="height:30px" />
+        	</div>
+        	<div class="col-sm-4">
+        		<a href="#" id="stock_filter_button" class="btn btn-primary">筛选</a>
+        	</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+        {{ pro_mac.pro_form(form.notice.label,form.notice) }}
+        {{ pro_mac.pro_form(form.notice_a.label,form.notice_a) }}
+        
+    </div>
+    <div class="form-group">
+        <div class="col-sm-2">
+            {{ form.date.label(class="control-label")}}
+        </div>
+        <div class="col-sm-4">
+            {{ form.date}}
+        </div>
+        {{ pro_mac.pro_form(form.operator_id.label,form.operator_id,1) }}
+    </div>
+
+    <div class="form-group">
+        <div class="col-sm-offset-3 col-sm-9">
+            <a href="#" class="btn btn-primary" id="stock_subbmit">确定</a>
+            <a href="#" id="stock_close_window" style="margin-left: 15px" class="btn btn-primary">关闭</a>
+        </div>
+    </div>
+</form>
+<script>
+    $(function () {
+        var getById = _util.get_partial("stock-form")
+        {% if form.name.data %}
+            var _isMofidy = true;
+        {% else %}
+            var _isMofidy = false;
+        {% endif %}
+        allCommon("{{date}}","#stock-form #date");
+        getById("date").datebox({ 
+            required:true ,
+            panelWidth:267,
+            height:30
+        });  
+        var _url_modify_cell    = "{{url_for('Production.modify_cell')}}";
+        var _url_add_stock      = "{{ url_for('Production.stock') }}";
+        var datagridId          = "#{0}datagrid".format("stock");
+        var registerId          = "#{0}register_dialog".format("stock");
+        function get_input_form() {
+            var data = _util.get_serialize_obj("#stock-form");
+            var is_ok= true;
+            data["category"]  = _util.get_option_selected("#category");
+            var checekKey = {
+                "name":"请输入名称",
+                "category":"请选择类型",
+                "number":"请输入数量",
+                // "price":"请检测价格是否为空或者正确",
+                "tickets":"请输入凭据号",
+                "support_id":"请选择供应商",
+                "date":"请选择日期",
+            }
+            
+            for(var key in checekKey){
+            	if(key == "price"){
+            		if(data.category !="代销" && parseFloat(data.price)<=0){
+            			$.messager.alert("提示",checekKey[key]);
+                    	is_ok = false;
+                    	break;
+            		}
+            	}
+                else if (!data[key]){
+                    $.messager.alert("提示",checekKey[key]);
+                    is_ok = false;
+                    break;
+                }
+            }
+            if (is_ok){
+                return data;
+            }else{
+                return false;
+            }
+            
+        }
+        getById("stock_support_id").combobox({    
+		    url:"{{url_for('Production.user_option_choice',userType="supporter")}}",    
+		    valueField:"id",    
+		    textField:"text",
+		    panelWidth:165,
+		    panelHeight:100,
+		    onLoadSuccess:function(){
+                {% if form.support_id.data %}
+                getById("stock_support_id").combobox("setValue","{{ form.support_id.data }}");
+                {% endif %}
+            }
+		});  
+		getById("date").parent().find("span.combo").width(164);
+		getById("date").parent().find("input.combo-text").width(144);
+		getById("stock_support_id").parent().find("span.combo").width(164);
+		getById("stock_support_id").parent().find("input.combo-text").width(144);
+		getById("stock_filter_button").width(140);
+		getById("input.combo-text,combo-item").css("textIndent","15px");
+        function modify(data){
+        	_util.common_success(data);
+        	if(data.state){
+                $(registerId).dialog("close");
+        		data  = get_input_form();
+        		data["support_id"] = getById("stock_support_id").combobox("getText");
+            	$( datagridId).datagrid("updateRow",{index:_global.selected,row:data});
+                $( datagridId).data("filterObj").modify_row(data);
+        	}
+        	
+        }
+        getById("stock_filter_button").bind("click",function(){
+        	getById("stock_support_id").combobox("reload");
+			$.messager.prompt("提示","请输入过滤条件",function(_d){
+				if(!_d)return;
+				data = getById("stock_support_id").combobox("getData");
+				_data=[]
+				for(var ids in data){
+					if(data[ids].text.indexOf(_d)>=0){
+						_data.push(data[ids]);
+					}
+				}
+				if(_data.length>0){
+	               	getById("customer_id").combobox("loadData", _data);
+	                getById("customer_id").combobox("setValue",_data[0].id);
+	            }else {
+	                _util.msgInfo("未能获得满足过滤条件的用户");
+           		} 
+			});
+			getById("input.messager-input").css({textIndent:"5px",height:25,lineHeight:25});
+        });
+        function clearInit(){
+             var _date = getById("date").datebox("getValue");
+            _util.clearInit("stock-form");
+            getById("date").datebox("setValue",_date || "{{date}}");
+            getById("operator_id").val("{{ form.operator_id.data}}");
+            getById("stock_support_id").combobox("clear")
+            getById("notice").val("");
+            getById("notice_a").val("");
+        }
+        getById("stock_close_window").on("click", function(){
+            clearInit();
+            $(registerId).dialog("close");
+        });
+        function addOk(data){
+            _util.common_success(data);   
+            if(data.state){
+                clearInit();
+                $( datagridId).datagrid("insertRow",{
+                    index:0,
+                    row:data.msg[0],
+                })
+                $( datagridId).data("filterObj").add_row(data.msg[0],0);
+            }
+        }
+        getById("stock_subbmit").bind("click", function () {
+            var data = get_input_form();
+            if (!data){return;} 
+            if(_isMofidy){
+                var _data = $(datagridId).datagrid("getSelected");
+                if(!_data){
+                    _util.msgError("请选择数据行")
+                }
+                window._success_msg = "修改入库信息成功";
+                data["data_id"]         = _global.data_id;
+                data["production_id"]   = "stock";
+                _util.form_ajax(_url_modify_cell,data,modify);
+            }else{
+                window._success_msg = "添加入库信息成功";
+                _util.form_ajax(_url_add_stock,data, addOk);
+            }
+        })
+    });
+</script>
+

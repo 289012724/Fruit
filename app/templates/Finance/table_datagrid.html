@@ -1,0 +1,80 @@
+{% extends "base_table_datagrid.html" %}
+
+{% block scripts%}
+	{{ super() }}
+<script>
+
+$(function () {
+        var operType 	    = '{{ operType }}';
+		var url_load_data   = "{{ url_for('Finance.load_all',operType=operType)}}";
+		var url_table_config= "{{ url_for('Finance.table_config',operType=operType) }}";
+		var url_delete		= "{{ url_for('Finance.delete_data')}}";
+        var url_search		= "{{ url_for('Finance.search',operType=operType )}}";
+        var _tableGridUtil = tabelGrid();
+        _tableGridUtil.main({
+            datagridId:"#{{operType}}datagrid",
+            toolbarId:"#{{operType}}toolbar",
+            registerDialogId:"#{{operType}}register_dialog",
+        	url_load_data:url_load_data,
+        	url_table_config:url_table_config,
+        	operType:operType,
+            url:_tableGridUtil.url_load_data
+        });
+        {%set names  = {'rebund':'还款信息',"writeoff":'冲销信息','rebate':'折扣信息'} %}
+        {% set  data = ["Finance.rebund", "Finance.writeoff","Finance.rebate"] %}
+        var _titleName       = "{{names[operType]}}";
+        var url_index_page   = "{{url_for(data[operTypeIndex])}}"; 
+        {% set height = [(330,600),(350,600),(350,600)]%}
+        var height    = {{height[operTypeIndex][0]}};
+        var width     = {{height[operTypeIndex][1]}};
+        $('#{{operType}}add').bind('click', function () {
+        	_tableGridUtil.addCell("添加" + _titleName,
+        			url_index_page,height,width);
+        });
+        _deletUtil.main({delete_url:url_delete,operType:"{{ operType }}"});
+        
+        $('#{{operType}}modify').bind('click', function () {
+			_tableGridUtil.modifyCell("修改" + _titleName,
+			"Finance/modify/{{ operType }}",height,width)        	
+        });
+        $('#{{operType}}refresh').bind('click', function () {_tableGridUtil.refresh()});
+        var sheight = 335;
+        var swidth  = 600;
+   	    {% if operType =="rebund" %}
+        	var sheight = 270;
+        {% endif %}
+        $("#{{operType}}search").bind("click",function(){
+        	_tableGridUtil.search(url_search,sheight,swidth);
+        });
+        
+        function delete_ok(data,selectData){
+            if (data.state) {
+                    rowIndex = $('#{{operType}}datagrid').datagrid('getRowIndex', selectData);
+                    $('#{{operType}}datagrid').datagrid('deleteRow', rowIndex);
+                    $("#{{operType}}datagrid").data("filterObj").delete_row(selectData);
+                    if(rowIndex == 0 && !($('#{{operType}}datagrid').datagrid('getData').total)){
+                        $('#{{operType}}refresh').click();
+                    }
+              }else{
+                _util.msgError(data.msg);
+              }
+        }
+        function delete_production(selectData){
+            var query = {operType:"{{operType}}",
+                        production_id:selectData.id }
+             _util.form_ajax(url_delete,query,function(data){
+                delete_ok(data,selectData)});
+        }
+
+        $("#{{operType}}delete").bind("click",function(){
+            var confirm = _util.confirm("是否要删除选中数据行",function(){
+                 var selections = $('#{{operType}}datagrid').datagrid('getSelections');
+                 for (var index in selections) {
+                     _data     = selections[index];
+                     delete_production(_data);
+                 }
+            });
+        });
+    });
+</script>
+{% endblock %}

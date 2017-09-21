@@ -1,0 +1,368 @@
+{% import 'Production/macro.html' as pro_mac %}
+<form id="rollback-form" class="form-horizontal" role="form">
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+      {{ pro_mac.pro_form(form.customer_id.label,form.customer_id) }}
+    </div>
+    <div class="form-group">
+        <div class='col-sm-2'>
+            {{form.sell_id.label(class="control-label")}}
+        </div>
+        <div class='col-sm-7'>
+            <select id="sell_id" name="sell_id" style="width:320px;height:30px">
+            </select>
+        </div>
+        <div class="col-sm-3">
+            <a href='#' id='filter-sell' class="btn btn-primary">筛选商品</a>
+        </div>
+    </div>
+    <div class='form-group'>
+        <div class='col-sm-2'>
+            <label>销售价格</label>
+        </div>
+        <div class='col-sm-4'>
+            <input type='text' class='form-control' id='sell_price' disabled='disabled' />
+        </div>
+        <div class='col-sm-2'>
+            <label>可退数量</label>
+        </div>
+        <div class='col-sm-4'>
+            <input type='text' class='form-control' id='sell_number' disabled='disabled' />
+        </div>
+    </div>
+    <div class="form-group">
+         {{ pro_mac.pro_form(form.tickets.label,form.tickets,1) }} 
+         {{ pro_mac.pro_form(form.number.label,form.number,1) }}
+    </div>
+    
+    <div class="form-group">
+        {{ pro_mac.pro_form(money.money_type.label,money.money_type,1) }} {{ pro_mac.pro_form(money.price.label,money.price,1) }}
+    </div>
+    <div class="form-group">
+        {{ pro_mac.pro_form(form.notice.label,form.notice) }} {{ pro_mac.pro_form(form.notice_a.label,form.notice_a) }}
+    </div>
+    <div class="form-group">
+        <div class="col-sm-2">
+          {{ form.reason.label(class='label-control')}}
+        </div>
+        <div class="col-sm-10">
+          {{ form.reason(class='form-control')}}
+        </div>
+    </div>
+    <div class="form-group">
+        {{ pro_mac.pro_form(form.date.label,form.date) }}
+        {{ pro_mac.pro_form(form.operator_id.label,form.operator_id) }}
+    </div>
+
+    <div class="form-group">
+        <div class="col-sm-offset-3 col-sm-9">
+            <a href="#" class="btn btn-primary" id="submit">确定</a>
+            <a href="#" id='close-window' style="margin-left: 15px" class="btn btn-primary">关闭</a>
+        </div>
+    </div>
+</form>
+<div id='_win_sell' class="easyui-dialog" data-options="closed:true" style="padding: 15px;padding-top:5px">
+    <form id='filter-sell' method="post">
+        <div class='form-group'>
+            <div class='col-sm-3'>
+                <label>日期(从)</label>
+            </div>
+            <div class='col-sm-9'>
+                <input type='text' id="dateFrom" name='dateFrom' />
+            </div>
+        </div>
+        <div class='form-group'>
+            <div class='col-sm-3'>
+                <label>日期(到)</label>
+            </div>
+            <div class='col-sm-9'>
+                <input type='text' id="dateTo" name='dateTo' />
+            </div>
+        </div>
+        <div class='form-group'>
+            <div class='col-sm-3'>
+                <label for="win_customer_id">{{form.customer_id.label.text}}</label>
+            </div>
+            <div class="col-sm-9">
+                <input type="text" name="win_customer_id" id='win_customer_id'></input>
+            </div>
+        </div>
+        <div class='form-group'>
+            <div class='col-sm-3'>
+                {{form.tickets.label(class='control-label')}}
+            </div>
+            <div class='col-sm-9'>
+                {{form.tickets(class='form-control',id="win_tickets")}}
+            </div>
+        </div>
+    </form>
+</div>
+<script>
+$(function() {
+    allCommon("{{date}}");
+    $('#date').datebox({
+        required: true,
+        panelWidth: 267,
+        width: 170,
+        height: 30
+    });
+
+    $("#dateFrom,#dateTo").datebox({
+        panelWidth: 267,
+        width: 200,
+        height: 30
+    });
+   
+    var _url_sell_columns = "{{ url_for('Production.roll_back_sell_column')}}";
+    var _url_load_sells = "{{ url_for('Production.load_back_sells')}}";
+    var _url_filter_sells = "{{ url_for('Production.load_filter_sells')}}";
+    var _url_roll_back = "{{ url_for('Production.roll_back')}}";
+    var _url_modify_cell = "{{url_for('Production.modify_cell')}}";
+    var _url_load_sell_info = "{{ url_for('Production.load_filter_sell_info')}}";
+    var _url_usr_choicess= "{{url_for('Production.user_option_choice',userType='customer')}}";
+     $("#customer_id").combobox({
+        url: _url_usr_choicess,
+        valueField: 'id',
+        textField: 'text',
+        width:166,
+        height:28,
+        panelWidth:276,
+        panelHeight:100,
+        {% if form.customer_id.data %}
+          });
+          $("#customer_id").combobox("setValue","{{form.customer_id.data}}");
+          $("#customer_id").combobox({disabled: true});
+      {% else %}
+          onSelect:function(rows){
+            $.ajax({
+              url:_url_load_sells,
+              data:{customer_id:rows.id},
+              method:'post',
+              success:function(data){
+                _comgridOpt._refresh_select(data, null);
+              }
+            });
+          }});
+      {% endif %}
+    
+    function _init_page(data){
+        _comgridOpt._refresh_select(data, null);
+    }
+    function get_back_form_input() {
+        var _data = _util.get_serialize_obj("#rollback-form");
+        _data.sell_id = _comgridOpt.selectId;
+        _data.date = $("#date").datebox("getValue");
+        _data.customer_id = $("#customer_id").combobox("getValue");
+        _check_input = {
+            "sell_id": "请选择销售商品",
+            'number': "请输入退货数量",
+            'tickets': "请输入凭据号",
+            'date': "请输入退货时间",
+            'customer_id':"请选择一个客户",
+            'price':"请输入付款金额,如果未付款,请输入0",
+        }
+        _check_number = function() {
+            var sell_number = parseInt($("#sell_number").val());
+            if (_data.number <= 0) {
+                _util.msgError("退货数量必须大于0");
+                return false
+            }
+            if (sell_number < _data.number) {
+                _util.msgError("退货数量不能大于可退数量");
+                return false;
+            }
+            return true;
+        }
+        if(!_data.price){
+            _util.msgError("请输入付款金额,如果未付款,请输入0");
+            return false;
+        }
+        _data.money_id = "{0}@{1}".format(_data.money_type, _data.price);
+        for (var k in _check_input) {
+            if (!_data[k]) {
+                _util.msgError(_check_input[k]);
+                return false;
+            }
+        }
+        if (_check_number())return _data;
+        return false;
+    }
+    function clearInit(){
+        $("#sell_id").combogrid("setValue","");
+        $("#sell_number,#sell_price").val("");
+        $("#tickets,#number").val("");
+        $("#reason,#notice,#noctic_a").val("");
+        $("#price").val("0")
+        $("#money_type").val(0);
+    }
+    $("#close-window").on('click', function(){
+            clearInit();
+    });
+    
+    function success_operate(data) {
+        _util.common_success(data);
+        if (data.state) {
+            _util.add_or_insert(data);
+            data = $("#customer_id").combobox("getValue");
+            $.ajax({
+                  url:_url_load_sells,
+                  data:{customer_id:data},
+                  method:'post',
+                  success:function(data){
+                    _comgridOpt._refresh_select(data, null);
+                  }
+            });
+            clearInit();
+        }
+    }
+
+    $("#submit").bind("click", function() {
+        data = get_back_form_input();
+        if (!data)return;
+        window._success_msg = '{0}退货信息成功'.format(_global.operate);
+        if (_global.operate  == "修改") {
+            data.production_id = _global.production_id;
+            data.data_id= _global.data_id;
+            _util.form_ajax(_url_modify_cell, data, function(data) {
+                _util.common_success(data);
+                if (data.state) {
+                    _util.add_or_insert(data);
+                    _comgridOpt.selectRowFun();
+                }
+            });
+        } else {
+            _util.form_ajax(_url_roll_back, data, success_operate);
+        }
+    });
+    _comgridOpt.main("#sell_id", "name");
+    _comgridOpt.selectRowFun = function() {
+        _util.form_ajax(_url_load_sell_info, {
+                sell_id: _comgridOpt.selectId
+            },
+            function(data) {
+                if (data.state) {
+                    $("#sell_price").val(data.msg.price);
+                    if (_global.operate  == "添加") {
+                        $("#sell_number").val(data.msg.number);
+                    } else {
+                        var _cur = $("#number").val();
+                        $("#sell_number").val(parseInt(data.msg.number) + parseInt(_cur));
+                    }
+                } else {
+                    _util.msgError(data.msg);
+                }
+            }
+        );
+    }
+
+    function showCombogrid(columns) {
+        $(_comgridOpt.id).combogrid({
+            panelWidth: 600,
+            columns: [columns],
+            idField: 'id',
+            singleSelect: true,
+            rownumbers: true,
+            onChange: _comgridOpt.onChange,
+            onClickRow: _comgridOpt.onClickRow,
+        }); 
+        {% if name_id %}
+          set_back_sell(); 
+        {% endif %}
+    }
+    $.ajax({
+        url: _url_sell_columns,
+        success: showCombogrid,
+    });
+
+    function set_back_sell() {
+        if (_global.operate  == "修改") {
+            var data = "{{ name_id }}".split("@");
+            _comgridOpt.selectId = parseInt(data[1]);
+            $("#sell_id").combogrid({
+                disabled: true
+            });
+            $('#sell_id').combogrid("setValue", "_" + data[0]);
+            _comgridOpt.selectRowFun();
+        }
+    }
+
+    function get_win_input() {
+        data = new Object();
+        data.tickets = $("#win_tickets").val();
+        data.dateFrom =$("#dateFrom").datebox("getValue");
+        data.dateTo = $("#dateTo").datebox("getValue");
+        data.customer_id=$("#win_customer_id").combobox("getValue");
+        _check = {
+            "dateFrom": "请输入开始时间",
+            "dateTo": "请输入截至时间"
+        }
+        for (var key in _check) {
+            if (!data[key]) {
+                _util.msgError(_check[key]);
+                return null;
+            }
+        }
+        return data;
+    }
+
+    function win_set_sell_filter() {
+        var query_data = get_win_input();
+        if (query_data) {
+            $.ajax({
+                url: _url_filter_sells,
+                data: query_data,
+                method: "post",
+                success: function(data) {
+                    if (data.state) {
+                        _comgridOpt._refresh_select(data.msg, null);
+                        $('#_win_sell').dialog('close');
+                    } else {
+                        _util.msgWarn(data.msg);
+                    }
+                }
+            });
+        }
+    }
+    var _combox_data = [];
+    $("#filter-sell").bind("click", function() {
+        $('#_win_sell').dialog({
+            width: 350,
+            height: 250,
+            title: "筛选单号",
+            iconCls: "icon-search",
+            buttons: [{
+                text: '确定',
+                iconCls: 'icon-ok',
+                handler: function(){
+                  win_set_sell_filter();
+                },
+            }, {
+                text: '关闭',
+                iconCls: "icon-cancel",
+                handler: function() {
+                    $('#_win_sell').dialog('close');
+                }
+            }]
+        });
+        if(_combox_data.length<=0){
+          $("#win_customer_id").combobox({    
+              url: _url_usr_choicess,
+              valueField: 'id',
+              textField: 'text',
+              width:200,
+              height:28,
+              panelWidth:276,
+              panelHeight:100, 
+              onLoadSuccess:function(){
+                _combox_data = $(this).combobox("getData");
+              }
+          }); 
+          $("#dateTo").datebox("setValue", "{{date}}");
+          $("#dateFrom").datebox("setValue", "{{date}}");
+      }
+      $("#win_customer_id").combobox('setValue',$("#customer_id").combobox("getValue"));
+      $('#_win_sell').dialog('open');
+    });
+
+});
+</script>

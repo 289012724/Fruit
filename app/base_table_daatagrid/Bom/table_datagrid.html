@@ -1,0 +1,125 @@
+{% block data %}
+<div id="{{operType}}toolbar">
+    <!-- ["icon-search",'搜索','search'], -->
+	{% set data = [ 
+                   ["sys-print","导出","download"],
+                   ] %} 
+                   
+	<div id="smart_search_tb" style=" display:inline;margin-left:15px">
+		日期(从)　
+      <input name = "dateFrom" id="dateFrom_{{operType}}" class="easyui-datebox"  value="{{date}}"/> 
+      　日期(到)　
+      <input name = "dateTo"   id="dateTo_{{operType}}" class="easyui-datebox" value="{{date}}"></input>   
+      <a id="smart_load_{{ operType}}" class="easyui-linkbutton" data-options="    
+            iconCls: 'icon-reload',plain:true" >加载</a> 
+    </div>  
+    
+	{% for cell in data %} <a
+		id="{{ cell[2]}}_{{operType}}" plain="true"
+		class="easyui-linkbutton" style="margin: 3px 5px"
+		data-options="iconCls:'{{ cell[0] }}'">{{ cell[1] }} </a> 
+	{% endfor %}
+    <div id="output_menu_{{operType}}">
+    	<div id="excel_{{ operType}}" data-options="iconCls:'sys-excel'">excel</div>   
+    	<div id="pdf_{{ operType}}" data-options="iconCls:'sys-print'">pdf</div>   
+    </div>
+</div>
+
+<table id="{{operType}}" >
+
+</table>
+<div id="register_dialog"
+	style="padding: 15px; overflow: hidden; padding-bottom: 0"
+	class="easyui-dialog" data-options="closed:true"></div>
+<iframe id="iframe_{{operType}}" src="www.baidu.com" style="display:none">
+</iframe>
+
+{% endblock%}
+
+{% block scripts %}
+<script src="{{ url_for('static',filename='Js/production_common_new.js',external=True)}}"></script>
+<script src="{{ url_for('static',filename='Js/table_datagrid.js',_external=True)}}"></script>
+<script>
+$(function () {
+        var operType 	    = '{{ operType }}';
+		var url_load_data   = "{{ url_for('Bom.load_all',operType=operType)}}";
+		var url_table_config= "{{ url_for('Bom.table_config',operType=operType) }}";
+        var url_search		= "{{ url_for('Bom.search',operType=operType )}}";
+        var pagination_id	= "{{ operType}}"+"_pagination";
+        var download_id		= '#download_{{operType}}';
+        $(download_id).menubutton({    
+            menu: '#output_menu_{{operType}}'   
+        });  
+        $("#smart_load_{{ operType}}").linkbutton({    
+            iconCls: 'icon-reload',
+            plain:true,
+        });  
+     	
+        function downLoadOpt(dataType){
+        	var url  = "{{ url_for('Bom.down_load')}}";
+        	var data = get_load_input();
+        	data["operType"] = "{{operType}}";
+        	data["fileType"] = dataType;
+        	var ok = function(data){
+        		if(data.state){
+            		var _base= "{{ url_for('Bom.down_load',_external=True)}}".replace("download","");
+        			var _url = _base+"download_ok/{{operType}}/"+data.msg;
+        			var _del_url=_base+"download_delete/"+data.msg;
+        			$("#iframe_{{operType}}").attr("src",_url);
+        			setTimeout(function(){
+        				$.ajax({url:_del_url});
+        			},20000)
+        		}else{
+        			_util.msgError(data.msg);
+        		}
+        	}
+        	_util.form_ajax(url,data , ok);
+        }
+        $("#excel_{{ operType}}").on("click",function(){
+        	downLoadOpt("excel");
+        });
+        
+        $("#pdf_{{ operType}}").on("click",function(){
+        	downLoadOpt("pdf");
+        });
+        var _tableGridUtil = tabelGrid();
+        _tableGridUtil = _tableGridUtil.main({
+        	datagridId:"#{{operType}}",
+        	toolbarId:"#{{operType}}toolbar",
+        	url_table_config:url_table_config,
+        	url_search:url_search,
+        	operType:operType,
+            url_load_data:url_load_data,
+        });
+   		function get_load_input(){
+   			var onePageSize= 20;
+        	var _dataFromId= "#dateFrom_{{operType}}";
+        	var _dataToId  = "#dateTo_{{operType}}";
+        	var dateFrom = $(_dataFromId).datebox("getValue");
+        	var dateTo   = $(_dataToId).datebox("getValue");
+        	var query 	 = {pageNumber:1,pageSize:onePageSize,dateFrom:dateFrom,dateTo:dateTo}
+   			return query;
+   		}
+        _$("smart_load_{{ operType}}").on("click",
+            function(){
+                $(_tableGridUtil.datagridId).data("filterObj").init(null);
+            	var query    = get_load_input();
+                var ok = function(data){
+                    if (!data.state || data.msg.length<=0){
+                        _util.msgError("未获得该时间段的数据");    
+                    }else{
+                        $(_tableGridUtil.datagridId).datagrid("loadData",{
+                            total:data.msg.length,
+                            rows:data.msg.data,
+                            footer:[{'id':"汇总"}]
+                        });
+                    }
+                }
+            	_util.form_ajax(url_search,query,ok)
+            }
+        );
+  });
+</script>
+
+{% endblock %}
+

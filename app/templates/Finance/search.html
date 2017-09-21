@@ -1,0 +1,102 @@
+{% import 'Production/macro.html' as pro_mac %}
+<form id="{{operType}}-search-form" class="form-horizontal" role="form" method="POST">
+    <input type="hidden" name="unit" id="unit" value="箱"/>
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+        {{ pro_mac.pro_form(form.dateFrom.label,form.dateFrom) }}
+        {{ pro_mac.pro_form(form.dateTo.label,form.dateTo) }}
+    </div>
+ 	
+ 	<div class="form-group">
+        {{ pro_mac.pro_form(form.customer_id.label,form.customer_id) }}
+        <!-- {{ pro_mac.pro_form(form.operator_id.label,form.operator_id) }} -->
+    </div>
+    
+    <div class="form-group">
+        {{ pro_mac.pro_form(form.tickets.label,form.tickets) }}
+        {{ pro_mac.pro_form(form.notice.label,form.notice) }}
+    </div>
+    {% if operType !="rebund" %}
+    <div class="form-group">
+        <div class="col-sm-2">
+        	{{ form.description.label(class="control-label")}}
+        </div>
+        <div class='col-sm-10'>	 
+        	{{ form.description(class="form-control")}}
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="form-group">
+        <div class="col-sm-offset-3 col-sm-9">
+            <a href="#" class="btn btn-primary" id="submit">确定</a>
+            <a href="#" id='close-window' style="margin-left: 15px" class="btn btn-primary">关闭</a>
+        </div>
+    </div>
+</form>
+<script>
+    $(function () {
+        var getById = _util.get_partial("{{operType}}-search-form");
+        var datagridId          = "#{0}datagrid".format("{{operType}}");
+        var registerId          = "#{0}register_dialog".format("{{operType}}");
+    	allCommon();
+    	var date = "{{form.dateDefault.data}}";
+    	getById("dateTo").val(date);
+    	getById("dateFrom").val(date);
+        getById("dateFrom").datebox({ 
+                    panelWidth:267,
+                    width:165,
+                    height:30
+        });  
+        getById("dateTo").datebox({ 
+            panelWidth:267,
+            width:165,
+            height:30
+		}); 
+        var _url_search = "{{ url_for('Finance.search',operType=operType) }}";
+        var _url_usr_data="{{url_for('Production.user_option_choice',userType='customer')}}";
+        getById('customer_id').combobox({
+            url: _url_usr_data,
+            valueField: 'id',
+            textField: 'text',
+            width:166,
+            height:30,
+            panelWidth:166,
+            panelHeight:120
+        });
+        function get_input_form() {
+            var data 			= _util.get_serialize_obj("#bill-search-form");
+            data['csrf_token']  = getById("csrf_token").val();
+            data['operator_id'] = _util.get_option_selected("#bill-search-form #operator_id");
+            data["customer_id"] = getById('customer_id').combobox('getValue');
+            data["dateFrom"]	= getById("dateFrom").datebox("getValue");
+            data["dateTo"]		= getById("dateTo").datebox("getValue");
+            if (data['dateFrom'] && !data['dateTo']){
+            	data['dateTo']  = data['dateFrom'];
+            }
+          	return data
+        }
+        getById("close-window").on("click",function(){
+            $(registerId).dialog("close");
+        });
+        function searchOk(data){
+        	if (data.state){
+                console.log(data.msg);
+                $(datagridId).datagrid('loadData', 
+                { total: data.msg.length,rows: data.msg }); 
+                getById("close-window").click();
+        	}else{
+        		_util.msgWarn(data.msg);
+        	}
+        }
+        
+        getById('submit').on('click', function () {
+            var data = get_input_form();
+            if (data){
+            	_util.form_ajax(_url_search,data, searchOk);
+            }
+        	
+        })
+    });
+</script>
+

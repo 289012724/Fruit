@@ -1,0 +1,83 @@
+{% import 'Production/macro.html' as pro_mac %}
+<form id="rollout-search-form" class="form-horizontal" role="form" method="POST">
+    <input type="hidden" name="unit" id="unit" value="箱"/>
+    {{ form.hidden_tag() }}
+    <input name='roll_type' type='hidden' value='{{form.roll_type.data}}'/>
+    <div class="form-group">
+        {{ pro_mac.pro_form(form.dateFrom.label,form.dateFrom) }}
+        {{ pro_mac.pro_form(form.dateTo.label,form.dateTo) }}
+    </div>
+ 	
+ 	<div class="form-group">
+        {{ pro_mac.pro_form(form.operator_id.label,form.operator_id) }}
+    </div>
+    
+    <div class="form-group">
+        {{ pro_mac.pro_form(form.tickets.label,form.tickets) }}
+        {{ pro_mac.pro_form(form.reason.label,form.reason) }}
+    </div>
+    
+    <div class="form-group">
+        {{ pro_mac.pro_form(form.notice.label,form.notice) }}
+        {{ pro_mac.pro_form(form.notice_a.label,form.notice_a) }}
+    </div>
+    
+    <div class="form-group">
+        <div class="col-sm-offset-3 col-sm-9">
+            <a href="#" class="btn btn-primary" id="submit">确定</a>
+            <a href="#" id='close-window' style="margin-left: 15px" class="btn btn-primary">关闭</a>
+        </div>
+    </div>
+</form>
+<script>
+    $(function () {
+        var getById = _util.get_partial("rollout-search-form");
+        var datagridId          = "#{0}datagrid".format("rollout");
+        var registerId          = "#{0}register_dialog".format("rollout");
+    	allCommon();
+        getById("close-window").bind("click",function(){
+            $(registerId).dialog('close');
+        })
+    	var date = "{{form.date.data}}";
+    	getById("dateTo").val(date);
+    	getById("dateFrom").val(date);
+        getById("dateFrom").datebox({ 
+                    panelWidth:267,
+                    width:165,
+                    height:30
+        });  
+        getById("dateTo").datebox({ 
+            panelWidth:267,
+            width:165,
+            height:30
+		}); 
+        var _url_search = "{{ url_for('Production.search',operType=operType) }}";
+        
+        function get_input_form() {
+            var data 			= _util.get_serialize_obj("#rollout-search-form");
+            data['operate_id']  = _util.get_option_selected("#rollout-search-form #support_id");
+            if (data['dateFrom'] && !data['dataTo']){
+            	data['dataTo'] = data['dateFrom'];
+            }
+            return data;
+        }
+        function searchOk(data){
+        	if (data.state){
+                $(datagridId).datagrid('loadData', 
+                { total: data.msg.length,rows: data.msg }); 
+                getById("close-window").click();
+        	}else{
+        		_util.msgWarn(data['msg']);
+        	}
+        }
+        
+        getById('submit').bind('click', function () {
+            var data = get_input_form();
+            if (data){
+            	_util.form_ajax(_url_search,data, searchOk);
+            }
+        	
+        })
+    });
+</script>
+

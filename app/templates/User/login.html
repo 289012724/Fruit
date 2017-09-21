@@ -1,0 +1,171 @@
+{% extends 'layout.html' %}
+{% block title %}用户登录{% endblock %}
+{% block styles %}
+    {{ super() }}
+    <style>
+    	#login_container{
+  			width: 100%;
+	    	height:260px;
+	    	background-color: rgb(0,94,64);
+    	}
+    	.all_center{
+    		margin: auto;
+  			position: absolute;
+  			top: 0; left: 0; bottom: 0; right: 0;
+  			overflow:hidden;
+    	}
+    	.line_center{
+	    	margin: 0 auto;
+    	}
+	    #diaog_login{
+	    	padding:15px;
+	    	width: 400px;
+	    	margin-top: -15px;
+	    }
+	    body{
+	    	background-color: rgb(191,255,191);
+	    }
+	    .control-label{
+	    	color: rgb(255,255,255);
+	    }
+	    .form-group{
+	    	margin-top: 20px;
+	    }
+        .input-width{
+            width:270px;
+            height:30px;
+        }
+      .moth{
+        float: right;
+        width: 75px;
+        text-indent:10px;
+      }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div id="login_container" class="all_center">
+	<center class='control-label'><h3>欢迎</h3></center>
+    <div id="diaog_login" class="line_center">
+        <form class="form-horizontal" role="form" method="post" action="{{ url_for('User.login') }}">
+            {{ form.hidden_tag() }}
+            <div class="form-group" style="margin-top:0">
+                <div class="col-sm-3">
+                    {{form.username.label(class='control-label')}}
+                </div>
+                <div class="col-sm-9">
+                    {{form.username(class="form-control input-width")}}
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-3">
+                    {{ form.password.label(class="control-label") }}
+                </div>
+                <div class="col-sm-9">
+                    {{ form.password(class='form-control input-width')}}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-3">  
+                    {{ form.operate_date.label(class="control-label") }}
+                </div>
+                <div class="col-sm-9">
+                    {{ form.operate_date() }}
+                    <div id='moth' style="display: inline;margin-left:10px">
+                    <input type="text" id="operate_moth" class="moth" name="operate_moth"></input>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-offset-3 col-sm-9">
+                    <input id="submit"    class="btn btn-primary" type='button'style="width: 110px;height: 35px" value="登录"/>
+                    <input id="show_pass" class="btn btn-primary" type="button" style="margin-left: 42px;width: 110px;height: 35px" value="显示密码"/>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+     <script type="text/javascript" src="{{ url_for('static',filename='Js/BaseCommon.js',_external=True) }}">
+    </script>
+    <script type="text/javascript">
+        $("#show_pass").bind("click",function () {
+            $("#password").attr('type','text');
+        });
+        $('#operate_date').datebox({ 
+                    required:true ,
+                    panelWidth:267,
+                    width:180,
+                    height:30,
+        });  
+        $("#operate_moth").combobox({    
+            data:[
+              {id:0,text:"当　天"},
+              {id:1,text:"近一月"},
+              {id:2,text:'近二月'},
+              {id:3,text:'近三月'}
+              ],
+            valueField:'id',    
+            textField:'text',
+            height:'30px',   
+        });  
+        $("#operate_moth").combobox("setValue","{{ form.operate_moth.data}}");
+        formateDate(new Date(),"#operate_date");
+        function value(id){return $("#"+id).val();}
+       	function get_form_data(){
+       		var data= {
+       				csrf_token:value('csrf_token'),
+       				username:value('username'),
+       				password:value("password"),
+       				operate_date:$("#operate_date").datebox("getValue"),
+              operate_moth:$("#operate_moth").combobox("getValue")
+       		}
+       		var _check={
+       				username:"请输入用户名",
+       				password:"请输入密码",
+       				operate_date:"请选择操作日期",
+              operate_moth:"请选择初始化界面时,显示的数据时段"
+       		}
+       		for (var key in _check){
+       			if(!data[key].trim()){
+       				$.messager.alert("提示",_check[key]);
+       				return false
+       			}
+       		}
+       		return data;
+       	}
+       	function submit_ok(data){
+            console.log(data);
+      			if(data.state){
+      				window.location.href=data.msg;
+      			}else{
+      				$.messager.alert("提示",data.msg);
+      			}
+       	}
+		$("#submit").bind("click",function(){
+			var data = get_form_data();
+			if(!data){
+				return
+			}else{
+				$.ajax({
+					method:'post',
+					data:data,
+					success:submit_ok});
+				}
+		});
+    {% if _str %}
+      {% if state %}
+        _type = "info"
+      {% else %}
+        _type ="error"
+      {% endif %}
+      $.messager.alert("提示","{{ _str }}",_type)
+    {% endif %}
+    </script>
+
+{% endblock %}

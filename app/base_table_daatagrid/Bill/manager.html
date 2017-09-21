@@ -1,0 +1,117 @@
+{% block data %}
+<div id="{{operType}}toolbar">
+    <label for='username'>客户:</label>
+    <input id='{{operType}}option' name="username" />
+    <input type='hidden' id='is_gen_{{operType}}' name='is_gen' value='1' />
+    <div id="smart_search_tb" style=" display:inline;margin-left:15px">
+        日期(从)
+        <input name="dateFrom" id="dateFrom_{{operType}}" class="easyui-datebox" value="{{date}}" /> 　日期(到)
+        <input name="dateTo" id="dateTo_{{operType}}" class="easyui-datebox" value="{{date}}"></input>
+        <a id="smart_load_{{ operType}}" class="easyui-linkbutton" data-options="    
+            iconCls: 'icon-reload',plain:true">加载</a>
+    </div>
+    <a id="smart_delete_{{ operType}}" class="easyui-linkbutton" data-options="    
+            iconCls: 'icon-reload',plain:true">删除</a>
+</div>
+<table id="{{operType}}">
+</table>
+{% endblock%} {% block scripts %}
+<script src="{{ url_for('static',filename='Js/production_common_new.js',external=True)}}"></script>
+<script src="{{ url_for('static',filename='Js/table_datagrid.js',_external=True)}}"></script>
+<script>
+$(function() {
+    var operType = '{{ operType }}';
+    var url_table_config = "{{ url_for('Bill.table_config',operType=operType) }}";
+    var url_get_bills = "{{ url_for('Bill.get_bills')}}";
+    var pagination_id = "{{ operType}}" + "_pagination";
+    var url_pre_date = "{{ url_for('Bill.get_last_date')}}";
+    var useropt = "#{{operType}}option";
+    var dateFrom = "#dateFrom_{{operType}}";
+    var dateTo = "#dateTo_{{operType}}";
+    var url_delete_bill = "{{ url_for('Bill.delete_bill')}}";
+    var url_load_data = "{{url_for('Bill.load_all',operType=operType)}}";
+    $(useropt).combobox({
+        url: "{{ url_for('Bill.user_option',operType='cstbill' )}}",
+        valueField: 'id',
+        textField: 'text',
+        width: 130,
+    });
+    var _tablePagination = tabelGrid();
+    _tablePagination.main({
+        datagridId: "#{{operType}}",
+        toolbarId: "#{{operType}}toolbar",
+        url_table_config: url_table_config,
+        url_search: url_get_bills,
+        operType: operType,
+        url_load_data:url_load_data,
+    });
+
+    function get_load_input() {
+        var onePageSize = 20;
+        var dateFrom = $("#dateFrom_{{operType}}").datebox("getValue");
+        var dateTo = $("#dateTo_{{operType}}").datebox("getValue");
+        var username = $("#{{operType}}option").combobox("getValue");
+        var query = {
+            pageNumber: 1,
+            pageSize: onePageSize,
+            dateFrom: dateFrom,
+            dateTo: dateTo
+        }
+        query['username'] = username;
+        return query;
+    }
+    _$("smart_load_{{ operType}}").on("click",
+        function(){
+            $(_tablePagination.datagridId).data("filterObj").init(null);
+            var query    = get_load_input();
+            var ok = function(data){
+                if (!data.state || data.msg.length<=0){
+                    _util.msgError("未获得该时间段的数据");    
+                }else{
+                    var _data = {
+                      total:data.msg.length,
+                      rows:data.msg.data,
+                      footer:[{'id':"汇总"}],
+                    };
+                    $(_tablePagination.datagridId).data("filterObj").init(_data);
+                    $(_tablePagination.datagridId).datagrid("loadData",_data);
+                }
+            }
+            _util.form_ajax(url_get_bills,query,ok);
+        }
+    );
+
+    function delete_production(selectData) {
+        var rowIndex = $('#{{operType}}').datagrid('getRowIndex', selectData);
+        var query    =  {'bill_id': selectData.id};
+        if (selectData.has_filled=="是"){
+          _util.msgError("该账单存在关联数据不能删除");
+          return;
+        }
+        _util.form_ajax(url_delete_bill,query,
+            function(data) {
+                if (data.state) {
+                    if (rowIndex != -1) {
+                        $('#{{operType}}').datagrid('deleteRow', rowIndex);
+                    }
+                } else {
+                    $.messager.alert("提示", data.msg, 'error');
+                }
+            });
+    }
+    $("#smart_delete_{{ operType}}").on("click", function() {
+        var selections = $('#{{operType}}').datagrid('getSelections');
+        if (selections[0]) {
+            _util.confirm("是否要删除选中数据行", function(r) {
+                for (var index in selections) {
+                    _data = selections[index];
+                    delete_production(_data);
+                }
+            });
+        } else {
+            _util.msgError("请先选需要择删除的数据行.")
+        }
+    });
+});
+</script>
+{% endblock %}

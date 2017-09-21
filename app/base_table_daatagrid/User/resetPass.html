@@ -1,0 +1,56 @@
+{% import 'macro.html' as macro %}
+<style type="text/css">
+    #resetPass-form {padding:15px;padding-top: 35}
+</style>
+<form id='resetPass-form' class="form-horizontal" role="form">
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+        <div class="col-sm-3">
+            <label for="username_input">用 户 名</label>
+        </div>
+        <div class="col-sm-9">
+            <input id="username_input" name='username' disabled='disabled' class="form-control" value="{{ username }}"></input>
+        </div>
+    </div>
+    {{ macro.form_data('password','password_input','新 密 码','text',form.password.data,placeholder='请输入新密码') }} 
+    {% if form.password.errors[0] %}
+    <span class="col-sm-offset-3 col-sm-9">{{ form.password.errors[0] }}</span> 
+    {% endif %} {{ macro.form_data('confirm','confirm_input','确认密码','text','',placeholder='请再输入一次') }} {% if form.confirm.errors[0] %}
+    <span class="col-sm-offset-3 col-sm-9">{{ form.confirm.errors[0] }}</span> {% endif %}
+    <div class="form-group">
+        <div class="col-sm-offset-4 col-sm-8">
+        <input id='submit_dialog' type="button" name="submit" class='btn btn-primary' value="确定"/>
+        </div>
+    </div>
+</form>
+<script type="text/javascript">
+    $('#submit_dialog').css("width", 110).css("height", 35);
+    function get_form_data() {
+        var _pass = $("#password_input").val();
+        var _confirm = $("#confirm_input").val();
+        var csrf_token= $("#csrf_token").val();
+        var data = {
+            'password':_pass,
+            "confirm":_confirm,
+            "csrf_token":csrf_token,
+            "submit":true}
+        return data
+    }
+    $("#submit_dialog").bind("click", function() {
+        var _url = "{{ target }}";
+        console.log(_url);
+        var _data = get_form_data();
+        console.log(_data);
+        $.ajax({
+            data:_data,
+            url:_url,
+            method:"POST",
+            success: function(data) {
+                if (data == 1) {
+                    $.messager.alert("提示", "重置密码成功:{0}".format("{{username}}"));
+                    $('#register_dialog').dialog("close");
+                }
+            }
+        });
+    });
+</script>

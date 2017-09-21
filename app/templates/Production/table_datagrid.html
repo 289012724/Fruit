@@ -1,0 +1,100 @@
+{% extends "base_table_datagrid.html" %}
+
+{% block scripts%}
+	{{ super() }}
+<script>
+    $(function () {
+        var url_load_all_production = "{{url_for('Production.load_all_production',operType=operType)}}";
+        var url_table_config 		= "{{ url_for('Production.table_config',operType=operType) }}";
+        var url_delete_production   = "{{  url_for('Production.delete_production',operType=operType)}}";
+		    var _url_check_pro_state    = "{{ url_for('Production.delete_check_state')}}";
+        var _url_search				= "{{ url_for('Production.search',operType=operType) }}";
+        var _tableGridUtil = tabelGrid();
+        _tableGridUtil.main({
+            datagridId:"#{{operType}}datagrid",
+            toolbarId:"#{{operType}}toolbar",
+            registerDialogId:"#{{operType}}register_dialog",
+            url_table_config:url_table_config,
+            url_load_data:url_load_all_production,
+        });
+        {% set heights=[(600,470),(615,570),
+                        (600,530),(600,435),
+                        (600,435)] 
+        %}
+    		var width  = {{heights[operTypeIndex][0]}};
+    		var height = {{heights[operTypeIndex][1]}};
+        {% set  data = [
+                    "Production.stock", 
+                    "Production.sell",
+                    "Production.roll_back", 
+                    "Production.roll_out",
+                    "Production.roll_loss"
+                    ]
+        %}
+        var _url_click_link   = "{{url_for(data[operTypeIndex])}}"; 
+        var _name = ['添加入库信息', '添加销售信息', '添加退货信息',
+                '添加转出信息', '添加报损信息'];
+        $('#{{operType}}add').bind('click', function () {
+        	   var title= _name[{{operTypeIndex}}];
+          	 _tableGridUtil.addCell(title,_url_click_link,height,width);
+        });
+        function delete_production(selectData){
+        	 _util.form_ajax(url_delete_production, {'production_id':selectData.id}, 
+          	 function (data) {
+              if (data.state) {
+                   	rowIndex = $('#{{operType}}datagrid').datagrid('getRowIndex', _data);
+                   	$('#{{operType}}datagrid').datagrid('deleteRow', rowIndex);
+                    $("#{{operType}}datagrid").data("filterObj").delete_row(_data);
+                    if(rowIndex == 0 && !($('#{{operType}}datagrid').datagrid('getData').total)){
+                        $('#{{operType}}refresh').click();
+                    }
+              }else{
+                _util.msgError(data.msg);
+              }
+         });
+        }
+
+       	function check_production_state(selectData){
+        	var query_data = {'operType':"{{operType}}" ,"productionId":selectData.id};
+        	_util.form_ajax(_url_check_pro_state,query_data,function(data){
+        		if (data.state){
+        			delete_production(selectData)
+        		}else{
+        			var confirm = _util.confirm(data.msg,function(){
+        				delete_production(selectData)
+        			});
+        		}
+        	});
+        }
+       	
+        $('#{{operType}}delete').bind('click', function () {
+            _tableGridUtil.prev = null;
+        	var confirm = _util.confirm("是否要删除选中数据行",function(){
+        		 var selections = $('#{{operType}}datagrid').datagrid('getSelections');
+                 for (var index in selections) {
+                     _data 	   = selections[index];
+                     check_production_state(_data);
+                 }
+        	});
+        });
+        $('#{{operType}}modify').bind('click', function () {
+        	var href =  "/Production/modify/{{ operType }}";
+        	var title=  _name[{{operTypeIndex}}].replace("添加",'修改');
+        	_tableGridUtil.modifyCell(title,href,height,width);	
+        });
+        
+        {% set height_search=[(600,490),(600,370),
+            (600,350),(600,350),
+            (600,350),(600,350)] 
+		%}
+        var swidth  = {{ height_search[operTypeIndex][0] }};
+        var sheigth = {{ height_search[operTypeIndex][1] }};
+        $("#{{operType}}search").bind("click",function(){
+            _tableGridUtil.prev = null;
+        	var title = _name[{{operTypeIndex}}].replace("添加",'搜索') ;
+        	_tableGridUtil.search(_url_search,sheigth,swidth);
+        });
+        $('#{{operType}}refresh').bind('click', _tableGridUtil.refresh);
+    });
+</script>
+{% endblock %}

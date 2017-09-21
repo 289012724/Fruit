@@ -1,0 +1,130 @@
+{% import 'Production/macro.html' as pro_mac %}
+<form id="{{operType}}-form" class="form-horizontal" role="form" style='padding:15px 3px'>
+    {{ form.hidden_tag() }}
+    <div class="form-group" >
+        {{ pro_mac.pro_form(form.date.label,form.date,1) }}
+        {{ pro_mac.pro_form(form.tickets.label,form.tickets,1) }}
+
+    </div>
+    <div class="form-group">
+        {{ pro_mac.pro_form(form.customer_id.label,form.customer_id,1) }}
+        {{ pro_mac.pro_form(form.money_price.label,form.money_price,1) }}
+    </div>
+
+    <div class="form-group">
+        {{ pro_mac.pro_form(form.description.label,form.description) }}
+        {{ pro_mac.pro_form(form.notice.label,form.notice) }}
+    </div>
+
+    <div class="form-group">
+    	{{ pro_mac.pro_form(form.operator_id.label,form.operator_id) }}
+        <!-- {{ pro_mac.pro_form(form.bill_id.label,form.bill_id) }} -->
+    </div>
+
+    <div class="form-group">
+        <div class="col-sm-offset-3 col-sm-9">
+            <a href="#" class="btn btn-primary" id="submit">确定</a>
+            <a href="#" id='close-window' style="margin-left: 15px" class="btn btn-primary">关闭</a>
+        </div>
+    </div>
+</form>
+
+<script>
+    $(function () {
+        var getById = _util.get_partial("{{operType}}-form");
+        var datagridId          = "#{0}datagrid".format("{{operType}}");
+        var registerId          = "#{0}register_dialog".format("{{operType}}");
+        {% if form.bill_id.data %}
+            var _isMofidy = true;
+        {% else %}
+            var _isMofidy = false;
+        {% endif %}
+        allCommon("{{date}}","#{{operType}}-form #date");
+        getById('date').datebox({
+            required:true ,
+            panelWidth:267,
+            width:170,
+            height:30
+        });
+        getById('date').datebox("setValue","{{date}}");
+        var _url_rebate	       = "{{url_for('Finance.'+operType)}}";
+        var _url_customer_chs  = "{{url_for('Finance.get_customer_choices')}}";
+       
+        getById('close-window').bind("click",function(){
+            $(registerId).dialog("close");
+        })
+        getById("customer_id").combobox({    
+            url:_url_customer_chs,    
+            valueField:'id',    
+            textField:'username',
+            width:165,
+            height:30,
+        	onLoadSuccess:function(data){
+        		var _default = getById("customer_id").combobox('getValue');
+        		for(var index in data){
+        			_val  = data[index];
+        			if(_val.username == _default){
+        				getById("customer_id").combobox('select',_val.id);
+        				return 
+        			} 
+        		}
+        	}
+        });  
+		
+        function get_form_input(){
+           	 var _data 		   = _util.get_serialize_obj("#{{operType}}-form");
+             _data.date	   	   = getById("date").datebox("getValue");
+           	 _check_input      = {
+                    'date':"请输入时间",
+                    'tickets':"请输入凭据号",
+                    'money_price':"请输入金额",
+             }
+             for(var k in _check_input){
+                    if(!_data[k]){
+                 		_util.msgError(_check_input[k]);
+                 		return false;
+                       break
+                    }
+             }
+             return _data;
+             
+        }
+        function clearInit(){
+            getById("notice").val("");
+            getById("tickets").val("");
+            getById("reason").val("");
+            getById("money_price").val("");
+            getById("bill_id").combobox("clear");
+            getById("customer_id").combobox("clear");
+        }
+        function success_operate(data) {
+            _util.common_success(data);   
+            if(data.state){
+                clearInit();
+				_util.add_or_insert(data,datagridId);
+            }
+        }
+        
+        getById("submit").bind("click",function(){
+        	var data = get_form_input();
+        	if (!data){return}
+        	{% if operType == "writeoff" %}
+        		window._success_msg ='{0}冲销信息成功'.format(_global.operate);
+        	{% else %}
+        		window._success_msg ='{0}折扣信息成功'.format(_global.operate);
+        	{% endif %}
+	         if(_isMofidy){
+	     		var _url_modify_cell = "Finance/modify/{0}/{1}".format("{{operType}}",_global.data_id);
+	             _util.form_ajax(_url_modify_cell,data,function(data){
+	            	 _util.common_success(data); 
+	            	 if(data.state){
+	            		 _util.add_or_insert(data,datagridId);
+		             }
+	            });
+	         }else{
+	        	 _util.form_ajax(_url_rebate, data, success_operate);
+	         }
+        });
+    });
+</script>
+

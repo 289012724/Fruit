@@ -1,0 +1,305 @@
+{% block data %}
+<div id="{{operType}}toolbar">
+    {% set data = [ ["sys-print","单个导出","download"], ["sys-print","批量导出","bat_download"],] %} 
+    {% if operType =="cstbill"%} 
+      客　户: 
+    {% else %} 
+      供应商: 
+    {% endif %}
+    <input id='{{operType}}option' />
+    <input type='hidden' id='is_gen_{{operType}}' name='is_gen' value='1' />
+    <div id="smart_search_tb" style=" display:inline;margin-left:15px">
+        日期(从)
+        <input name="dateFrom" id="dateFrom_{{operType}}" class="easyui-datebox" /> 　日期(到)
+        <input name="dateTo" id="dateTo_{{operType}}" class="easyui-datebox" value="{{date}}"></input>
+        <a id="smart_load_{{ operType}}" class="easyui-linkbutton" data-options="    
+            iconCls: 'icon-reload',plain:true">加载数据</a>
+    </div>
+    {% for cell in data %} <a id="{{ cell[2]}}_{{operType}}" plain="true" class="easyui-linkbutton" data-options="iconCls:'{{ cell[0] }}'">{{ cell[1] }} </a> {% endfor %}
+    <div id="output_menu_{{operType}}">
+        <div id="excel_{{ operType}}" data-options="iconCls:'sys-excel'">excel</div>
+        <div id="pdf_{{ operType}}" data-options="iconCls:'sys-print'">pdf</div>
+    </div>
+    
+    <div id="bat_output_menu_{{operType}}">
+        <div id="bat_excel_{{ operType}}" data-options="iconCls:'sys-excel'">excel</div>
+        <div id="bat_pdf_{{ operType}}" data-options="iconCls:'sys-print'">pdf</div>
+    </div>
+
+
+</div>
+<table id="{{operType}}">
+</table>
+<div id="register_dialog" style="padding: 15px; overflow: hidden; padding-bottom: 0" class="easyui-dialog" data-options="closed:true"></div>
+<iframe id="iframe_{{operType}}" src="www.baidu.com" style="display:none">
+</iframe>
+{% endblock%} {% block scripts %}
+<script src="{{ url_for('static',filename='Js/production_common_new.js',external=True)}}"></script>
+<script src="{{ url_for('static',filename='Js/table_datagrid.js',_external=True)}}"></script>
+<script>
+$(function() {
+    var operType = '{{ operType }}';
+    var url_load_data = "{{ url_for('Bill.load_all',operType=operType)}}";
+    var url_table_config = "{{ url_for('Bill.table_config',operType=operType) }}";
+    var url_search = "{{ url_for('Bill.search',operType=operType )}}";
+    var pagination_id = "{{ operType}}" + "_pagination";
+    var url_pre_date = "{{ url_for('Bill.get_last_date')}}";
+    var has_bill = "{{ url_for('Bill.check_has_bill')}}";
+    var download_id = '#download_{{operType}}';
+    var bat_down_load= "#bat_download_{{operType}}";
+
+    var useropt = "#{{operType}}option";
+    var dateFrom = "#dateFrom_{{operType}}";
+    var dateTo = "#dateTo_{{operType}}";
+    var is_generate_bill = "#is_gen_{{operType}}";
+    var user_choice =  "{{ url_for('Bill.user_option',operType='cstbill' )}}";
+    $(useropt).combobox({
+        url: "{{ url_for('Bill.user_option',operType=operType )}}",
+        valueField: 'id',
+        textField: 'text',
+        width: 130,
+        onSelect: function(data) {
+            $.ajax({
+                url: url_pre_date,
+                data: {
+                    customer_id: data.id
+                },
+                method: 'post',
+                success: function(data) {
+                    $(dateFrom).datebox("setValue", data)
+                }
+            });
+        }
+    });
+    $.ajax({
+        url:user_choice,
+        success:function(data){
+            // data = JSON.parse(data);
+            var _d = new Array();
+            _d.push({id:"-1",text:"所有客户"});
+            for(var index in data){
+                _d.push(data[index]);
+            }
+            $(useropt).combobox('loadData',_d);
+            $(useropt).combobox("setValue","-1");
+            var date = "{{date}}";
+            if(date){
+                date = date.split("-");
+                date = "{0}-{1}-1".format(date[0],date[1]);
+                $(dateFrom).datebox("setValue",date);
+            }
+        }
+    });
+    $(download_id).menubutton({
+        menu: '#output_menu_{{operType}}'
+    });
+    $(bat_down_load).menubutton({
+        menu: '#bat_output_menu_{{operType}}'
+    });
+
+    $("#smart_load_{{ operType}}").linkbutton({
+        iconCls: 'icon-reload',
+        plain: true,
+    });
+
+    function startProgress() {
+        $.messager.progress({
+            title: '温馨提示',
+            msg: '正在生成对账单数,请稍等......'
+        });
+    }
+    function get_down_load_url(dwName,data){
+      var _base = "{{ url_for('Bill.down_load',_external=True)}}".replace("download", "");
+      var _url = _base + "download_ok/{{operType}}/" + data.msg + "/" + dwName;
+      var _del_url = _base + "download_delete/" + data.msg;
+      return [_url,_del_url]
+    }
+    function _down_load_file(down,del,date){ 
+      var date = date || 5000;
+      var _form = "<form id='down_form' method='get' style='display:none'></form>";
+        var input = $("<input type='submit'/>");
+        form    = $(_form);
+        form.append(input);
+        form.form({
+          url:down,
+        });
+        _del_f = function(){
+          // $.get(del);
+        }
+        setTimeout(_del_f, date);
+        $("body").append(form);//将表单放置在web中
+        input.click();
+
+    }
+    function _one_file(data){
+      if (data.state) {
+          downName = get_load_input().dateTo;
+          _user    = $(useropt).combobox("getText");
+          last     = data.msg.split(".")[1];
+          fileName = data.msg;
+          dwName   = "{0}_{1}_对账单.{2}".format(downName, _user, last);
+          urls     = get_down_load_url(dwName,data);
+          // _down_load_file(urls[0],urls[1]);
+          _util.msgInfo("生成对账成功:请到D:Fruit/app/static 中查看，文件名:{0}".format(data.msg));
+          // _util.msgInfo("下载成功,文件名称:{0}".format(dwName));
+          $.messager.progress('close');
+        } else {
+            $.messager.progress('close');
+            _util.msgError(data.msg);
+        }
+    }
+    function bat_file(data){
+      fileName = data.msg;
+      dwName   = fileName
+      urls     = get_down_load_url(dwName,data);
+      // _down_load_file(urls[0],urls[1],10000);
+
+      if(data.state){
+          _util.msgInfo("生成对账成功:请到D:Fruit/app/static 中查看，文件名:{0}".format(data.msg));
+      }else{
+          _util.msgInfo("生成对账成功:请到D:Fruit/app/static 中查看{0}".format(data.msg));
+      }
+      //   _util.msgInfo("下载成功,文件名称:{0}".format(dwName));
+      // }else{
+      //    msg  = "下载成功,文件名称:{0}".format(dwName) + data.msg
+      // }
+      $.messager.progress('close');
+    }
+    function downLoadOpt(dataType) {
+        var url  = "{{ url_for('Bill.down_load')}}";
+        var data = get_load_input();
+        data["operType"] = "{{operType}}";
+        data["fileType"] = dataType;
+        data['is_gen']   = $(is_generate_bill).val();
+        var sh = startProgress();
+        var is_error = false;
+        console.log(data);
+        if(dataType.indexOf('bat') == -1){
+          _util.form_ajax(url, data, _one_file);
+        }else{
+          _util.form_ajax(url, data, bat_file);
+        }
+    }
+    /* 不检测账单的区间,只负责生成账单,报错后给用户提示*/
+    // function info_bat(call,dataType){
+    //   $.messager.confirm('提示',"是否在数据库中创建对应的账单?",
+    //     function(r) {
+    //         if (!r) {
+    //             $(is_generate_bill).val("0");
+    //         }else{
+    //             $(is_generate_bill).val("1");
+    //         }
+    //         call(dataType);
+    //     });
+    //   }
+    function info_bat(call,dataType){
+        call(dataType);
+      }
+
+    var clickCode = 0;
+    function start_run(dataType){
+        input = get_load_input()
+        if (input){
+           info_bat(downLoadOpt, dataType);
+        }
+    }
+    $("#excel_{{ operType}}").on("click", function() {
+        clickCode = 1;
+        start_run("excel")
+        
+    });
+    $("#pdf_{{ operType}}").on("click", function() {
+        clickCode = 2;
+        start_run("pdf");
+    });
+    $("#bat_excel_{{ operType}}").on("click", function() {
+        clickCode = 3;
+        start_run("bat_excel");
+    });
+    $("#bat_pdf_{{ operType}}").on("click", function() {
+        clickCode = 4;
+        start_run("bat_pdf");
+    });
+
+    var _tableGridUtil = tabelGrid();
+    _tableGridUtil.main({
+        datagridId: "#{{operType}}",
+        toolbarId: "#{{operType}}toolbar",
+        url_table_config: url_table_config,
+        url_search: url_search,
+        operType: operType,
+        url_load_data: url_load_data,
+    });
+
+    function get_load_input() {
+        var onePageSize = 20;
+        var _dataFromId = "#dateFrom_{{operType}}";
+        var _dataToId = "#dateTo_{{operType}}";
+        var dateFrom = $(_dataFromId).datebox("getValue");
+        var dateTo = $(_dataToId).datebox("getValue");
+        var userName = $(useropt).combobox("getValue");
+        if(userName=="-1"){userName=""}
+        if (!userName && (clickCode == 1 || clickCode == 2) ){
+            {%
+                if operType == 'cstbill' 
+            %}
+            _util.msgError("请选择一个客户"); 
+            {%
+                else 
+            %}
+            _util.msgError("请选择一个供应商"); 
+            {% 
+              endif 
+            %}
+            return null
+        }
+        var _dend = dateFrom.split("-");
+        if (_dend[2] != "01") {
+            _util.msgError("对账的开始日期只能是每月的一号");
+            return null
+        }
+        if(!dateFrom){
+            _util.msgError("请选择开始日期");
+            return null
+        }
+        if(!dateTo){
+            _util.msgError("请选择截止日期");
+            return null
+        }
+        var query = {
+            pageNumber: 1,
+            pageSize: onePageSize,
+            dateFrom: dateFrom,
+            dateTo: dateTo
+        }
+        query['username'] = userName;
+        return query;
+    }
+
+    _$("smart_load_{{ operType}}").on("click",
+        function() {
+            clickCode = 5;
+            var query = get_load_input();
+            if (!query) return
+            var ok = function(data) {
+                $(_tableGridUtil.datagridId).data("filterObj").init(null);
+                if (!data.state || data.msg.length <= 0) {
+                    _util.msgError("未获得该时间段的数据");
+                } else {
+                    var _data = {
+                        total: data.msg.length,
+                        rows: data.msg.data,
+                        footer: [{
+                            'id': "汇总"
+                        }],
+                    };
+                    $(_tableGridUtil.datagridId).data("filterObj").init(_data);
+                    $("#{{ operType}}").datagrid("loadData", _data);
+                }
+            }
+            _util.form_ajax(url_search, query, ok);
+        }
+    );
+});
+</script>
+{% endblock %}

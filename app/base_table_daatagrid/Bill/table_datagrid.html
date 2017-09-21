@@ -1,0 +1,212 @@
+{% block data %}
+<div id="{{operType}}toolbar">
+	{% set data = [ 
+                   ["sys-print","导出","download"],
+                   ] %} 
+     {% if operType =="cstbill"%}
+     	客　户:
+     {% else %}
+     	供应商:
+     {% endif %}
+    <input id='{{operType}}option'/> 
+    <input type='hidden' id='is_gen_{{operType}}' name='is_gen' value='1'/>
+	<div id="smart_search_tb" style=" display:inline;margin-left:15px">
+		日期(从)　
+      <input name = "dateFrom" id="dateFrom_{{operType}}" class="easyui-datebox" /> 
+      　日期(到)　
+      <input name = "dateTo"   id="dateTo_{{operType}}" class="easyui-datebox" value="{{date}}"></input>   
+      <a id="smart_load_{{ operType}}" class="easyui-linkbutton" data-options="    
+            iconCls: 'icon-reload',plain:true" >加载</a> 
+    </div>  
+    
+	{% for cell in data %} <a
+		id="{{ cell[2]}}_{{operType}}" plain="true"
+		class="easyui-linkbutton" style="margin: 3px 5px"
+		data-options="iconCls:'{{ cell[0] }}'">{{ cell[1] }} </a> 
+	{% endfor %}
+    <div id="output_menu_{{operType}}">
+    	<div id="excel_{{ operType}}" data-options="iconCls:'sys-excel'">excel</div>   
+    	<div id="pdf_{{ operType}}" data-options="iconCls:'sys-print'">pdf</div>   
+    </div>
+</div>
+
+<table id="{{operType}}" >
+
+</table>
+<div id="register_dialog"
+	style="padding: 15px; overflow: hidden; padding-bottom: 0"
+	class="easyui-dialog" data-options="closed:true"></div>
+<iframe id="iframe_{{operType}}" src="www.baidu.com" style="display:none">
+</iframe>
+
+{% endblock%}
+
+{% block scripts %}
+<script src="{{ url_for('static',filename='Js/production_common_new.js',external=True)}}"></script>
+<script src="{{ url_for('static',filename='Js/table_datagrid.js',_external=True)}}"></script>
+<script>
+$(function () {
+        var operType 	    = '{{ operType }}';
+		var url_load_data   = "{{ url_for('Bill.load_all',operType=operType)}}";
+		var url_table_config= "{{ url_for('Bill.table_config',operType=operType) }}";
+        var url_search		= "{{ url_for('Bill.search',operType=operType )}}";
+        var pagination_id	= "{{ operType}}"+"_pagination";
+        var url_pre_date	= "{{ url_for('Bill.get_last_date')}}";
+        var has_bill		= "{{ url_for('Bill.check_has_bill')}}";
+        var download_id		= '#download_{{operType}}';
+        var useropt			= "#{{operType}}option";
+        var dateFrom		= "#dateFrom_{{operType}}";
+ 		var dateTo			= "#dateTo_{{operType}}";
+ 		var is_generate_bill="#is_gen_{{operType}}";
+        $(useropt).combobox({    
+            url:"{{ url_for('Bill.user_option',operType=operType )}}",    
+            valueField:'id',    
+            textField:'text',
+            width:130,
+            onSelect:function(data){
+            	$.ajax({
+            		url:url_pre_date,
+            		data:{customer_id:data.id},
+            		method:'post',
+            		success:function(data){
+            			$(dateFrom).datebox("setValue",data)
+            		}
+            	});
+        	}
+        });
+        
+        $(download_id).menubutton({    
+            menu: '#output_menu_{{operType}}'   
+        });  
+        
+        $("#smart_load_{{ operType}}").linkbutton({    
+            iconCls: 'icon-reload',
+            plain:true,
+        });  
+     	function startProgress(){
+     		$.messager.progress({
+    				title:'温馨提示',
+    				msg:'正在下载数据,请稍等......'
+    		});
+     	}
+        function downLoadOpt(dataType){
+        	var url  = "{{ url_for('Bill.down_load')}}";
+        	var data = get_load_input();
+        	data["operType"] = "{{operType}}";
+        	data["fileType"] = dataType;
+        	data['is_gen']	 = $(is_generate_bill).val();
+        	var sh  = startProgress();
+        	var ok = function(data){
+        		if(data.state){
+        			downName = get_load_input().dateTo;
+        			_user	 = $(useropt).combobox("getText");
+        			last	 = data.msg.split(".")[1];
+        			dwName	 = "{0}_{1}_对账单.{2}".format(downName,_user,last);
+            		var _base= "{{ url_for('Bill.down_load',_external=True)}}".replace("download","");
+        			var _url = _base+"download_ok/{{operType}}/"+data.msg+"/"+dwName;
+        			var _del_url=_base+"download_delete/"+data.msg;
+        			$("#iframe_{{operType}}").attr("src",_url);
+        			setTimeout(function(){
+        				$.ajax({url:_del_url});
+        			},2000);
+        			_util.msgInfo("下载成功,文件名称:{0}".format(dwName));
+        		}else{
+        			_util.msgError(data.msg.format( $(useropt).combobox('getText')));
+        		}
+        		$.messager.progress('close');
+        		
+        	}
+        	_util.form_ajax(url,data , ok);
+        }
+        /* 检测日期区间是否有效 ,并让用户确定在导出的时候是否生成对应的账单*/
+        function checkIsOk(_call,_types){
+       		function _has_bill(data){
+       			if (!data.state){
+       				$.messager.confirm('提示', data.msg+",是否继续操作?", 
+       					function(r){
+        					if (!r){return;}
+       					$.messager.confirm("提示","是否在数据库中创建对应的账单?",function(r){
+       	       				if(!r){
+       	       					$(is_generate_bill).val("0");
+       	       				}else{
+                        $(is_generate_bill).val("1");
+                      }
+       	       				_call(_types);
+       	       			});
+        			});
+       			}else{
+              $.messager.confirm("提示","是否在数据库中创建对应的账单?",function(r){
+                      if(!r){
+                        $(is_generate_bill).val("0");
+                      }
+                      _call(_types);
+                });
+            }
+       		}
+       		var _qaray = {
+       			customer_id:$(useropt).combobox("getValue"),
+       			dateFrom:$(dateFrom).datebox("getValue")
+       		}
+       		_util.form_ajax(has_bill,_qaray,_has_bill);
+        }
+        
+        $("#excel_{{ operType}}").on("click",function(){
+        	checkIsOk(downLoadOpt,"excel");
+        });
+        $("#pdf_{{ operType}}").on("click",function(){
+        	checkIsOk(downLoadOpt,"pdf");
+        });
+        var _tableGridUtil = tabelGrid();
+        _tableGridUtil.main({
+        	datagridId:"#{{operType}}",
+        	toolbarId:"#{{operType}}toolbar",
+        	url_table_config:url_table_config,
+        	url_search:url_search,
+        	operType:operType,
+          url_load_data:url_load_data,
+        });
+   		function get_load_input(){
+   			var onePageSize= 20;
+        	var _dataFromId= "#dateFrom_{{operType}}";
+        	var _dataToId  = "#dateTo_{{operType}}";
+        	var dateFrom = $(_dataFromId).datebox("getValue");
+        	var dateTo   = $(_dataToId).datebox("getValue");
+        	var userName = $(useropt).combobox("getValue");
+        	if (!userName){
+        		{% if operType == 'cstbill' %}
+        			_util.msgError("请选择一个客户");
+        		{% else %}
+        			_util.msgError("请选择一个供应商");
+        		{% endif %}
+        		return null
+        	}
+        	var query 	 = {pageNumber:1,pageSize:onePageSize,dateFrom:dateFrom,dateTo:dateTo}
+      		query['username'] = userName;
+   			return query;
+   		}
+
+      _$("smart_load_{{ operType}}").on("click",
+        function(){
+            var query    = get_load_input();
+            var ok = function(data){
+                $(_tableGridUtil.datagridId).data("filterObj").init(null);
+                if (!data.state || data.msg.length<=0){
+                    _util.msgError("未获得该时间段的数据");    
+                }else{
+                    var _data = {
+                      total:data.msg.length,
+                      rows:data.msg.data,
+                      footer:[{'id':"汇总"}],
+                    };
+                    $(_tableGridUtil.datagridId).data("filterObj").init(_data);
+                    $("#{{ operType}}").datagrid("loadData",_data);
+                }
+            }
+            _util.form_ajax(url_search,query,ok);
+        }
+    );
+  });
+</script>
+
+{% endblock %}
+

@@ -1,0 +1,21 @@
+{% macro pro_form(label,input,isMust=0) %}
+    <div class="col-sm-2">
+        {{ label }}
+        {% if isMust %}
+            <span class="must-input">*</span>
+        {% endif %}
+    </div>
+    <div class="col-sm-4 ">
+        {{ input(class='form-control') }}
+
+    </div>
+{% endmacro %}
+
+{% macro pro_form_data(label,label_for,input_value) %}
+    <div class="col-sm-3">
+        <label for="{{ label_for }}">{{ label }}</label>
+    </div>
+    <div class="col-sm-9">
+        <input class="form-control" value="{{ input_value }}" id="{{ label_for }}"/>
+    </div>
+{% endmacro %}

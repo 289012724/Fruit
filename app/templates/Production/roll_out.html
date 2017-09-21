@@ -1,0 +1,319 @@
+{% import 'Production/macro.html' as pro_mac %}
+<form id="roll_out_form" class="form-horizontal" role="form">
+    	{{ form.hidden_tag() }}
+    <input type='hidden' name='roll_type' value='{{ form.roll_type.data }}'/>
+    
+    <div class="form-group">
+        <div class="col-sm-2">
+            <label for="stock_id">入库商品 <span class="must-input">*</span></label>
+        </div>
+        <div class="col-sm-7">
+            <select id="rollout_stock_id" name="stock_id" style="width:320px;height:30px"></select>
+        </div>
+        <div class="col-sm-3">
+            <a id='rollout_filter_stock' class="btn btn-primary">筛选商品</a>
+        </div>
+    </div>
+    <div class="form-group">
+    	<div class='col-sm-2'>
+    		<label>价格</label>
+    	</div>
+    	<div class='col-sm-4'>
+    		<input type='text' id='stock_price' disabled='disabled'class='form-control'/> 
+    	</div>
+    	<div class='col-sm-2'>
+    		<label>{% if form.roll_type.data =="转出" %}
+    				可转数量
+    			   {% else %}
+    				可报数量
+    			   {% endif %}
+    				</label>
+    	</div>
+    	<div class='col-sm-4'>
+    		<input type='text' id='stock_number' disabled='disabled' class='form-control'/>
+    	</div>
+    </div>
+    
+    <div class="form-group">
+        {{ pro_mac.pro_form(form.tickets.label,form.tickets,1) }}
+        {{ pro_mac.pro_form(form.number.label,form.number,1) }} 
+    </div>
+    <div class="form-group">
+        {{ pro_mac.pro_form(form.date.label,form.date,1) }} 
+        {{ pro_mac.pro_form(form.operator_id.label,form.operator_id,1) }}
+    </div>
+    <div class="form-group">
+        {{ pro_mac.pro_form(form.notice.label,form.notice) }}
+        {{ pro_mac.pro_form(form.notice_a.label,form.notice_a) }}
+    </div>
+    <div class='form-group'>
+    	<div class='col-sm-2'> 
+    		{{ form.reason.label(class="control-label")}}
+    	</div>
+    	<div class='col-sm-10'>
+    		{{ form.reason(class='form-control')}}
+    	</div>
+    </div>
+    <div class="form-group">
+        <div class="col-sm-offset-3 col-sm-9">
+            <a href="#" class="btn btn-primary" id="rollout_submmit">确定</a>
+            <a href="#" id='rollout_close_window' style="margin-left: 15px" class="btn btn-primary">关闭</a>
+        </div>
+    </div>
+</form>
+
+<div id='rollout_win' class="easyui-dialog" 
+    data-options="closed:true" 
+    style="padding: 15px;padding-top:5px">
+    <form id="rollout_filter_stock_input">
+        <div class="form-group" >
+            <div class='col-sm-3'>
+                <label for='win_date'>日期</label>
+            </div>
+            <div class='col-sm-9'>
+                <input id='rollout_win_date' name='date' >
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <div class='col-sm-3'>
+                    <label >品名</label>
+            </div>
+            <div class='col-sm-9'>
+                <input class='form-control' type='text' name='name' id="rollout_win_name"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-3"><label for="category">类别</label></div>
+            <div class="col-sm-9">
+                <select class="form-control" id='rollout_win_category' name="category">
+                        <option value=""></option>
+                        <option value="销售">购进</option>
+                        <option value="代销">代销</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class='col-sm-3'>
+                <label >品牌</label>
+            </div>
+            <div class='col-sm-9'>
+                <input class='form-control' type='text' name='brand_id' id="rollout_win_brand_id"/>
+            </div>
+        </div>
+    </form>
+</div>
+<div id='rollout_win_buttons' style="display: none;">
+    <a id='rollout_win_ok' class="easyui-linkbutton"  data-option="iconCls:icon-cancel">确定</a>
+    <a id='rollout_win_cancel' class="easyui-linkbutton"  data-option="iconCls:icon-ok">取消</a>
+</div>
+<script>
+$(function() {
+    var getById = _util.get_partial("roll_out_form");
+    var roll_win= _util.get_partial("rollout_win")
+    {% if form.number.data %}
+        var _isModify = true;
+    {% else %}
+        var _isModify = false;
+    {% endif %}
+    getById("roll_type").attr("disabled", true);
+    allCommon("{{date}}","#roll_out_form #date");
+    $('#roll_out_form #date,#rollout_win #rollout_win_date').datebox({
+        required:true ,
+        panelWidth:267,
+        width:165,
+        height:30
+    });
+    $("#rollout_win #rollout_win_date").datebox({width:200});
+    var _url_roll_out =  "{{ url_for('Production.roll_out') }}";
+    var _url_modify_cell = "{{url_for('Production.modify_cell')}}";
+    var _url_roll_out = "{{ url_for('Production.roll_out') }}";
+    var _url_stock_columns = "{{ url_for('Production.get_stock_columns') }}";
+    var _url_load_stocks   = "{{ url_for('Production.get_stock') }}";
+    var _url_cout_price    = "{{ url_for('Production.get_count_price') }}";
+    
+    _comgridOpt.main("#rollout_stock_id","name");
+   	_comgridOpt.selectRowFun= set_count_price;
+	var datagridId          = "#{0}datagrid".format("rollout");
+    var registerId          = "#{0}register_dialog".format("rollout");
+    function set_count_price(){
+        $.ajax({
+               url: _url_cout_price,
+               data: {id: _comgridOpt.selectId},
+               success: function (data) {
+                   getById("stock_price").val(data.stock_price);
+                   if(_isModify){
+                        var number = data.stock_number + parseInt(getById("number").val());
+                        console.log(data);
+                        alert(number);
+                       getById("stock_number").val(number);
+                   }else{
+                        getById("stock_number").val(data.stock_number);
+                    }
+               }
+           });
+   }
+    function clearInit(){
+        var _date = getById("date").datebox('getValue');
+        _util.clearInit('roll_out_form');
+        getById("date").datebox('setValue',_date || "{{date}}");
+        getById("operator_id").val("{{ form.operator_id.data}}");
+        getById("rollout_stock_id").combogrid("setValue","");
+        getById("notice").val("");
+        getById("notice_a").val("");
+        getById("reason").val("");
+    }
+    getById("rollout_close_window").on('click', function(){
+        $(registerId).dialog('close');
+        clearInit();
+    });
+    function success_operate(data) {
+        _util.common_success(data);           
+        if(data.state){
+            if(!_isModify){
+                clearInit();
+            }else{
+                $(registerId).dialog('close');
+            }
+        	set_count_price();
+        	_util.add_or_insert(data,datagridId);
+            
+        }
+    }
+
+   	function get_form_input(){
+   		_data 		      = _util.get_serialize_obj("#roll_out_form");
+        _data.stock_id    = _comgridOpt.selectId;
+        _check_input      = {
+            "stock_id":"请选择入库商品",
+            'number':"请输入转出数量",
+            'tickets':"请输入凭据号",
+        }
+        var stock_numebr = parseInt(getById("stock_number").val());
+        for(var k in _check_input){
+            if(!_data[k]){
+         		_util.msgError(_check_input[k]);
+                break
+            }
+        }
+        if(_data.number <=0){
+        	_util.msgError("{0}的数量必须大于0".format("{{ form.roll_type.data }}"));
+        	return false;
+        }
+        if( stock_numebr < _data.number){
+        	_util.msgError("{0}的数量不能大于可以转数量".format("{{ form.roll_type.data }}"));
+        	return false;
+        }
+        return _data;
+        
+   	}
+    getById('rollout_submmit').bind('click', function() {
+    	 data = get_form_input();
+         if (!data){return}
+         if(_isModify){
+             window._success_msg ='{0}{1}信息成功'.format("修改","{{ form.roll_type.data }}");
+         }else{
+            window._success_msg ='{0}{1}信息成功'.format("添加","{{ form.roll_type.data }}");
+         }
+         if(_isModify){
+             data['production_id']="rollout";
+             data['data_id']      =_global.data_id;
+             _util.form_ajax(_url_modify_cell,data,success_operate);
+         }else{
+             _util.form_ajax(_url_roll_out, data, success_operate);
+         }
+    });
+    function is_ok_to_append(data1,data2){
+        for(var key in data1){
+            if(data1[key] && data2[key].indexOf(data1[key]) == -1){
+                return false;
+            }
+        }
+        return true;
+    }
+    filter_by_user_input =function(){
+        var _data  = _util.get_serialize_obj("#rollout_filter_stock_input");
+        _data.date = roll_win("rollout_win_date").datebox('getValue');
+        _comgridOpt._init_data();
+        var _new_obj = [];
+        for(var index in _comgridOpt.old_data.rows){
+            var _d = _comgridOpt.old_data.rows[index];
+            if(is_ok_to_append(_data,_d)){
+                _new_obj.push(_d);
+            }
+        }
+        return _new_obj
+    }
+    function win_set_stock_filter() {
+        var _all_data = filter_by_user_input();
+        if (_all_data.length != 0) {
+            _comgridOpt._refresh_select(_all_data, null);
+            _comgridOpt._refresh_select(_all_data, null);
+            $('#rollout_win').dialog('close');
+        } else {
+           _util.msgError('未能获得相应的入库商品数据,请重新输入筛选条件');
+        }
+    }
+    
+    getById("rollout_filter_stock").bind('click', function () {
+        $('#rollout_win').dialog({
+            width: 350,
+            height: 250,
+            title: "筛选商品",
+            iconCls: "icon-search",
+            closed:true,
+            buttons: [{
+                text: '确定',
+                iconCls: 'icon-ok', 
+                handler: win_set_stock_filter,
+            }, {
+                text: '关闭',
+                iconCls: "icon-cancel", 
+                handler: function () {
+                    $('#rollout_win').dialog('close');
+                }
+            }]
+        });
+        $('#rollout_win').dialog('open');
+    });
+	
+    var is_set_stock = null;
+    /*  注意这个位置死循环 */
+    function set_sell_stock(){
+    	if(_isModify && is_set_stock == null){
+    		 is_set_stock = true;
+    		 var data     = "{{ name_id }}".split("@");
+    		  _comgridOpt.selectId = parseInt(data[1]);
+             /* 在调整价格的时候一并调整修改时的数量 */
+             set_count_price();
+             getById("rollout_stock_id").combogrid({disabled:true});
+             getById('rollout_stock_id').combogrid("setValue","_"+data[0]);
+    	}
+    }
+    
+    
+    function showCombogrid(columns){
+    	getById("rollout_stock_id").combogrid({
+            panelWidth: 600,
+            columns: [columns],
+            idField: 'id',
+            singleSelect: true,
+            rownumbers: true,
+            {% if not name_id %}
+            url: _url_load_stocks,
+            {% endif %}
+            onChange: _comgridOpt.onChange,
+            onClickRow: _comgridOpt.onClickRow,
+        });
+        {% if name_id %}
+        	set_sell_stock();
+        {% endif %}
+    }
+    $.ajax({
+        url:_url_stock_columns,
+        success: function (data) {
+        	showCombogrid(data);
+        }
+    });
+});
+</script>
