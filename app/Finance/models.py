@@ -10,7 +10,7 @@ class Rebund(db.Model):
     id          = db.Column(db.Integer, primary_key=True, autoincrement=True)
     date        = db.Column(db.DateTime)
     tickets     = db.Column(db.String(20))
-    money_type  = db.Column(db.Enum(u"现金",u"支付宝",u"微信",u"转账",u"支票"))
+    money_type  = db.Column(db.String(20))
     money_price = db.Column(db.Float(2))
     customer_id = db.Column(db.Integer)
     operator_id = db.Column(db.Integer)

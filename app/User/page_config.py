@@ -14,7 +14,7 @@ department =[
 user       = [
                 {'field': 'id', 'title': u'编号', 'width': 60},
                 {'field': 'username', 'title': u'用户名', 'width': 150},
-                {'field': 'department', 'title': u'部门', 'width': 250},
+                {'field': 'department_id', 'title': u'部门', 'width': 250},
                 {'field': 'telephone', 'title': u'联系方式', 'width': 250},
                 {'field':"state", 'title':u"状态", 'width':100 }
 ]

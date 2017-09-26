@@ -8,9 +8,8 @@
 @file: BaseModelOperate.py
 @time: 2016/7/11 0011
 """
-from .. import database
-from ._annotation import exception_show_class, get_parameters
-
+from ..           import database
+from ._annotation import exception_show_class,get_parameters
 
 class BaseOperate(object):
     def __init__(self):
@@ -54,7 +53,7 @@ class BaseOperate(object):
         """
         @attention: use to append the model to modellist
         """
-        if not isinstance(value, list): value = [value]
+        if not isinstance(value,list):value = [value]
         self.ModelList.extend(value)
 
     @property
@@ -82,7 +81,7 @@ class BaseOperate(object):
         """
         self.ModelList = self.Model()
         model = self.ModelList[-1]
-        [setattr(model, column, value) for column, value in zip(self.Column, args)]
+        [setattr(model,column,value) for column,value in zip(self.Column,args)]
         return True, model
 
     @exception_show_class
@@ -98,16 +97,17 @@ class BaseOperate(object):
         return True, _model
 
     @get_parameters
-    def _get_parameters(self, *arg, **kwargs):
+    def _get_parameters(self,*arg,**kwargs):
         return tuple(arg)
 
     @exception_show_class
     def update_model(self, model, *arg, **kwargs):
-        arg = self._get_parameters(*tuple(arg), **kwargs)
+        arg = self._get_parameters(*tuple(arg),**kwargs)
         model.Init(arg)
         self.ModelList = model
         return True, self.ModelList[-1]
 
+    
     def update(self):
         """
         @attention:  excute session update function
@@ -132,11 +132,12 @@ class BaseOperate(object):
         self.init_modelList()
         database.session.commit()
         return True, _model
-
+    
     @property
     def Session(self):
         return database.session
-
+    
+        
     @exception_show_class
     def get(self, **kwargs):
         """
@@ -168,4 +169,4 @@ class BaseOperate(object):
                 _row = self._get_row_data(is_dict, _row)
                 _data.append(_row)
             return True, _data
-        return True, []
+        return True,[]

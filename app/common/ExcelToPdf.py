@@ -5,8 +5,11 @@
 '''
 import os
 import traceback
+# import pythoncom
 from Queue import Queue
 
+
+# from win32com   import client
 
 class AppQueue(object):
     Queues = Queue()
@@ -16,11 +19,11 @@ class AppQueue(object):
 
     @classmethod
     def GetApp(cls):
+        return None
         # pythoncom.CoInitialize()
         # app = client.Dispatch('Excel.Application')
-        app = object()
-        app.Visible = 0
-        return app
+        # app.Visible = 0
+        # return app
 
     @classmethod
     def DeleteFile(cls, fileName):

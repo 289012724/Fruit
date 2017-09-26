@@ -7,42 +7,38 @@
 @software: PyCharm
 @file: __init__.py.py
 """
-from . import app, basedir, database
+from . import app,basedir,database
 import os
-from flask import render_template, \
-    url_for, request, redirect, jsonify
-from flask_login import current_user
-
+from flask                  import render_template,\
+    url_for,request,redirect,jsonify
+from flask_login            import  current_user
 
 def filter_css_js():
     if "static" in request.url:
         return True
 
-
 @app.before_request
 def must_login():
     if not filter_css_js():
-        if request.url == url_for('User.change_pass', _external=True) or \
-                        request.url == url_for('User.login', _external=True):
+        if request.url == url_for('User.change_pass',_external=True) or \
+            request.url == url_for('User.login', _external=True):
             pass
         else:
-            if not current_user.is_authenticated:
+            if  not current_user.is_authenticated:
                 return redirect(url_for('User.login'))
-
+        
 
 # @app.errorhandler(404)
 def error_404(state):
-    return render_template("error.html"), 404
-
+    return render_template("error.html"),404
 
 # @app.errorhandler(500)
 def error_500(state):
-    return render_template("error.html"), 500
-
-
+    return render_template("error.html"),500
+    
 @app.route('/index')
 def index():
-    return render_template('index.html', current_user=current_user, date=_dataBaseUtil.CurrentDateStr)
+    return render_template('index.html',current_user=current_user,date=_dataBaseUtil.CurrentDateStr)
 
 
 @app.route('/data', methods=['GET', 'POST'])
@@ -77,6 +73,5 @@ def config():
             }
             }
     return jsonify(data)
-
-
-from common import _dataBaseUtil
+from common                 import _dataBaseUtil
+import Admin

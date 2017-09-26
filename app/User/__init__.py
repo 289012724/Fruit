@@ -9,9 +9,10 @@
 @time: 2016/7/4 0004 下午 10:55
 """
 from flask import Blueprint
-
 User = Blueprint('User', __name__, url_prefix='/User')
 from . import modelOperates
-from . import pyModels
+from . import models
 from . import views
 from . import forms
+
+

@@ -56,9 +56,10 @@ def GetLincece(basedir):
 
     _code = reverseCode(_code)
     _mac = get_md5_mac()
-    if _mac == get_md5_mac():
-        return check_date(_code)
-    return False, u"主机地址不正确,请联系管理员"
+    return True, ""
+    # if _mac == get_md5_mac():
+    #     return check_date(_code)
+    # return False,u"主机地址不正确,请联系管理员"
 
 
 def get_code_md5(_code):
