@@ -5,17 +5,20 @@
 '''
 
 import models
-from ..common               import BaseOperate, _dataBaseUtil
-from sqlalchemy             import desc
+from ..common import BaseOperate, _dataBaseUtil
+from sqlalchemy import desc
+
 user_op = _dataBaseUtil.getDataBase("UserOperate", "User")
 DataFormat = "%Y-%m-%d"
+
 
 class RebundOperate(BaseOperate):
     def __init__(self):
         BaseOperate.__init__(self)
         self.Model = models.Rebund
-        self.Column = ['date', 'tickets', 'money_type', 'money_price', 'customer_id', "operator_id", "bill_id", 'notice']
-    
+        self.Column = ['date', 'tickets', 'money_type', 'money_price', 'customer_id', "operator_id", "bill_id",
+                       'notice']
+
     def _get_row(self, model, _key):
         _row = []
         for cell in _key:
@@ -32,12 +35,14 @@ class RebundOperate(BaseOperate):
                 data = data.strftime(DataFormat)
             _row.append((cell, data))
         return _row
-    
+
+
 class RebateOperate(BaseOperate):
     def __init__(self):
         BaseOperate.__init__(self)
         self.Model = models.Rebate
-        self.Column = ['date', 'tickets', 'money_price', 'customer_id', "operator_id", "bill_id", 'description', 'notice']
+        self.Column = ['date', 'tickets', 'money_price', 'customer_id', "operator_id", "bill_id", 'description',
+                       'notice']
 
     def _get_row(self, model, _key):
         _row = []
@@ -55,20 +60,22 @@ class RebateOperate(BaseOperate):
             _row.append((cell, data))
         return _row
 
+
 class WriteOffOperate(RebateOperate):
     def __init__(self):
         RebateOperate.__init__(self)
         self.Model = models.WriteOff
 
+
 class BillOperate(BaseOperate):
     def __init__(self):
         BaseOperate.__init__(self)
         self.Model = models.Bill
-        self.Column = ['date',   'total_money',
+        self.Column = ['date', 'total_money',
                        "next_money", 'level_money',
                        "customer_id", "operator_id",
                        "has_filled"]
-        
+
     def _get_row(self, model, _key):
         _row = []
         for cell in _key:
@@ -76,32 +83,35 @@ class BillOperate(BaseOperate):
                 state, data = user_op.get(id=getattr(model, cell))
                 if state and data:
                     data = data[0].username
-                else:data = "未知"
+                else:
+                    data = "未知"
             elif cell in ["has_filled"]:
                 data = getattr(model, cell)
-                if float(data) == 0:data = "否"
-                else:data = "是"
+                if float(data) == 0:
+                    data = "否"
+                else:
+                    data = "是"
             else:
                 data = getattr(model, cell)
             if cell in ['date_from', 'date']:
                 data = data.strftime(DataFormat)
             _row.append((cell, data))
         return _row
-    
-    def GetBillDate(self,dateFrom):
-        date  = dateFrom.split("-")
+
+    def GetBillDate(self, dateFrom):
+        date = dateFrom.split("-")
         date[-1] = "01"
-        date  = "-".join(date)
+        date = "-".join(date)
         return date
-    
+
     def GetPrevMoney(self, customer_id, dateFrom):
         """
         @attention: 获取该用户上次预留下来的预付款
         @param customer_id:用户id号
         @param dateFrom: 用户选择的开始月份时间 
         """
-        dateFrom= "%s"%dateFrom
-        dateFrom=self.GetBillDate(dateFrom)
+        dateFrom = "%s" % dateFrom
+        dateFrom = self.GetBillDate(dateFrom)
         _query = self.Model.query
         _query = _query.filter(self.Model.customer_id == customer_id,
                                self.Model.date < dateFrom)
@@ -110,22 +120,22 @@ class BillOperate(BaseOperate):
         if models:
             level_money = sum([model.level_money for model in models] or [0])
         return level_money
-    
+
     def GetCurrentBillMoney(self, customer_id, dateFrom):
         """
         @attention: 获取用户到目前为止的结余信息
         """
         date = self.GetBillDate(dateFrom)
-        _prev  = self.GetPrevMoney(customer_id, dateFrom)
+        _prev = self.GetPrevMoney(customer_id, dateFrom)
         _query = self.Model.query.filter(self.Model.customer_id == customer_id)
-        _query = _query.filter(self.Model.date==date)
-        model  = _query.all()
+        _query = _query.filter(self.Model.date == date)
+        model = _query.all()
         if model:
             data = model.total_money - _prev
         else:
             data = None
         return data
-    
+
     def GetLast12Model(self, customer_id):
         """
         @attention: 获取该用户最近的12笔账单
@@ -134,19 +144,19 @@ class BillOperate(BaseOperate):
         _query = _query.order_by(desc(self.Model.date)).limit(12)
         model = _query.all()
         return model
-    
+
     def GetPreEndDate(self, customer_id):
         """
         @attention: 获取用户上一次生成对账单的日期
         @param customer_id:用户id号
         """
         _query = self.Model.query.filter(self.Model.customer_id == customer_id)
-        _query = _query.filter(self.Model.has_filled == 1)\
-                .order_by(desc(self.Model.date))\
-                .limit(1)
+        _query = _query.filter(self.Model.has_filled == 1) \
+            .order_by(desc(self.Model.date)) \
+            .limit(1)
         _model = _query.all()
         return _model
-    
+
     def GetBillAllMoney(self, bill_id):
         model = self.get(id=bill_id)[-1]
         model = model[0]
@@ -156,7 +166,7 @@ class BillOperate(BaseOperate):
         _ok = rebund + rebate + writeOff
         total = sum([cell.money_price for cell in _ok] or [0])
         return total
-    
+
     def UpdateBill(self, bill_id, total_money=None):
         """
         @attention: 自动计算本月差额值
@@ -169,15 +179,15 @@ class BillOperate(BaseOperate):
         model.level_money = model.total_money - model.next_money
         self.ModelList = model
         return self.update()
-    
-    def UpdateBillNew(self,session,bill_id,total_money=None):
+
+    def UpdateBillNew(self, session, bill_id, total_money=None):
         model = self.get(id=int(bill_id))[-1]
         model = model[0]
         model.total_money = total_money or model.total_money
         model.next_money = self.GetBillAllMoney(bill_id)
         model.level_money = model.total_money - model.next_money
         session.add(model)
-        
+
     def UpdateByRebund(self, session, bill_id, snap):
         """
         @attention: 更新用户当月的还款数据
@@ -187,7 +197,7 @@ class BillOperate(BaseOperate):
         model.next_money += snap
         model.level_money = model.total_money - model.next_money
         session.add(model)
-    
+
     def UpdateByTotal(self, session, bill_id, snap):
         """
         @attention: 更新当月的账单信息
@@ -197,7 +207,7 @@ class BillOperate(BaseOperate):
         model.total_money += snap
         model.level_money = model.total_money - model.next_money
         session.add(model)
-        
+
     def GetLastNotFillBill(self, customer_id):
         """
         @attention: 获取未生成过对账单的账单数据
@@ -206,15 +216,15 @@ class BillOperate(BaseOperate):
         query = model.query.filter(model.customer_id == customer_id,
                                    model.has_filled == 0)
         return query.all() or []
-        
-        
+
     def ChecekDeleteState(self, customer_id, bill_name):
         state, model = self.get(customer_id=customer_id, tickets=bill_name)
         if state and model:
             model = model[0]
             if model.has_filled == 1:
                 return False
-    
+
+
 _data = (("rebund", RebundOperate),
          ("rebate", RebateOperate),
          ('writeoff', WriteOffOperate),
