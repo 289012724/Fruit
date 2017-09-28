@@ -64,7 +64,7 @@ class Search(object):
         _oper = _getOper("rollout")
         form = _getForm('RollOutSearch')
         if self.CheckFrom(form):
-            model = _oper.Model
+            model = _oper.model
             _query = model.query
             _query = self._fun(_query, model, form, "tickets", False)
             _query = self._fun(_query, model, form, "notice", False)
@@ -90,7 +90,7 @@ class Search(object):
         _oper = _getOper("rollback")
         form = _getForm('RollBackSearch')
         if self.CheckFrom(form):
-            model = _oper.Model
+            model = _oper.model
             _query = model.query
             _query = self._fun(_query, model, form, "tickets", False)
             _query = self._fun(_query, model, form, "notice", False)
@@ -118,7 +118,7 @@ class Search(object):
 
     def __get_stock_id(self, form):
         _oper = _getForm("Stock")
-        model = _oper.Model
+        model = _oper.model
         _query = model.query
         _query = self._fun(_query, model, form, "category")
         _query = self._fun(_query, model, form, "car_number", False)
@@ -133,7 +133,7 @@ class Search(object):
         _oper = _getOper("sell")
         form = _getForm('SellSearch')
         if self.CheckFrom(form):
-            model = _oper.Model
+            model = _oper.model
             _query = model.query
             _query = self._fun(_query, model, form, "tickets", False)
             _query = self._fun(_query, model, form, "notice", False)
@@ -165,7 +165,7 @@ class Search(object):
         _oper = _getOper("stock")
         form = _getForm('StockSearch')
         if self.CheckFrom(form):
-            model = _oper.Model
+            model = _oper.model
             _query = model.query
             _query = self._fun(_query, model, form, "tickets", False)
             _query = self._fun(_query, model, form, "brand_id", False)
@@ -232,7 +232,7 @@ class Search(object):
     def LoadFilterSell(self, **kwargs):
         self.OperType = "sell"
         _oper = _getOper(self.OperType)
-        model = _oper.Model
+        model = _oper.model
         _query = model.query
         _query = self._fun(_query, model, kwargs, "customer_id")
         _query = self._fun(_query, model, kwargs, "tickets", False)
@@ -249,7 +249,7 @@ class Search(object):
     def LoadBackSell(self, **kwargs):
         self.OperType = "sell"
         _oper = _getOper(self.OperType)
-        model = _oper.Model
+        model = _oper.model
         _query = model.query
         if current_user.username not in ['admin', 'auditor']:
             _query = self._fun(_query, model, kwargs, "operator_id")
@@ -288,7 +288,7 @@ class _LoadProdution(object):
 
     def _stock(self, **kwargs):
         _oper = _getOper("stock")
-        _model = _oper.Model
+        _model = _oper.model
         query = self._get_3_moth(_model, _dataBaseUtil.CurrentDateStr)
         if current_user.username not in ['admin', 'auditor']:
             kwargs['operator_id'] = current_user.id
@@ -303,7 +303,7 @@ class _LoadProdution(object):
         if current_user.username not in ['admin', 'auditor']:
             kwargs['operator_id'] = current_user.id
         _oper = _getOper(operType)
-        _model = _oper.Model
+        _model = _oper.model
         query = self._get_3_moth(_model, _dataBaseUtil.CurrentDateStr)
         for key, val in kwargs.items():
             eval_string = "query.filter_by(%s='%s')" % (key, val)

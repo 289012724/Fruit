@@ -242,7 +242,7 @@ class InitPage:
         @attention: 获取用户当前日期输入的财务数据
         """
         _oper = _getOper(operType.lower())
-        model = _oper.Model
+        model = _oper.model
         _query = self._get_3_moth(model, dataUtil.CurrentDateStr)
         if current_user.username not in ['admin', 'author']:
             _query = _query.filter(model.operator_id == current_user.id)
@@ -405,7 +405,7 @@ class InitPage:
         form = _getForm("SearchForm")
         if self.CheckFrom(form):
             _oper = _getOper(operType.lower())
-            model = _oper.Model
+            model = _oper.model
             _query = model.query
             _query = self._fun(_query, model, form, "tickets", False)
             _query = self._fun(_query, model, form, "notice", False)

@@ -8,46 +8,45 @@ from ...common import exception_show_class
 from ...common import _dataBaseUtil as dataUtil
 from ...Finance.services.BillService import _BillService
 
-_getOper = dataUtil.GetPartial("Production")
+_getOperate = dataUtil.GetPartial("Production")
 
 
 class DeleteModel(object):
     def __init__(self):
         object.__init__(self)
-        self.__operType = None
+        self.__operate_type = None
         self.__goodsId = None
 
     @property
-    def OperType(self):
-        return self.__operType
+    def operate_type(self):
+        return self.__operate_type
 
-    @OperType.setter
-    def OperType(self, value):
-        self.__operType = value
+    @operate_type.setter
+    def operate_type(self, value):
+        self.__operate_type = value
 
     @property
-    def GoodsId(self):
+    def good_ids(self):
         return self.__goodsId
 
-    @GoodsId.setter
-    def GoodsId(self, value):
+    @good_ids.setter
+    def good_ids(self, value):
         self.__goodsId = value
 
-    def DeleteStock(self, model, _session):
-        _oper = _getOper("sell")
-        sells = _oper.get(stock_id=model.id)[-1]
+    def delete_storage(self, model, _session):
+        sells = _getOperate("sell").get(stock_id=model.id)[-1]
         # 添加销售相关的关联数据关系,更新相关的账单
-        [self.DeleteSellPro(model, _session) for model in sells]
+        [self.delete_sells(model, _session) for model in sells]
 
-    def get_money_model(self, money_id):
-        _oper = _getOper("money")
-        _money = _oper.get(id=money_id)[-1]
+    @staticmethod
+    def get_money_model(self, uid):
+        _money = _getOperate("money").get(id=uid)[-1]
         return _money[0]
 
+    @staticmethod
     def get_bill(self, date, user_id):
-        _oper = dataUtil.getDataBase("bill", 'Finance')
-        bill_date = _BillService.GetBillDate(date)
-        state, model = _oper.get(customer_id=user_id, date=bill_date)
+        state, model = dataUtil.getDataBase("bill", 'Finance').get(customer_id=user_id,
+                                                                   date=_BillService.GetBillDate(date))
         if state and model:
             return model[0]
 
@@ -60,7 +59,7 @@ class DeleteModel(object):
             return model
         return None
 
-    def DeleteSellPro(self, model, _session):
+    def delete_sells(self, model, _session):
         """
         @attention: 开启删除事务处理
         @param model:需要删除的销售商品
@@ -80,9 +79,9 @@ class DeleteModel(object):
         bill = self.get_bills(date, model.customer_id, -total)
         if bill: _session.add(bill)
         # 删除关联的退货信息和更新相关的账单
-        [self.DeleteRollback(back, _session) for back in model.roll_backs]
+        [self.delete_roll_back(back, _session) for back in model.roll_backs]
 
-    def DeleteRollback(self, model, _session):
+    def delete_roll_back(self, model, _session):
         money = self.get_money_model(model.money_id)
         total = model.sell.price * model.number
         if money.id != 1:
@@ -91,30 +90,30 @@ class DeleteModel(object):
         bill = self.get_bills(model.date.strftime("%Y-%m-%d"), model.customer_id, total)
         if bill: _session.add(bill)
 
-    #     @exception_show_class
-    def DeleteModels(self, operType, productionId):
+    @exception_show_class
+    def delete_models(self, operate_type, uid):
         """
         @attention: 删除数据
-        @param operType:商品类型
-        @param productionId:产品ID号  
+        @param operate_type:商品类型
+        @param uid:产品ID号  
         """
-        self.OperType = operType
-        self.GoodsId = productionId
-        _oper = _getOper(self.OperType)
-        _session = _oper.Session
-        model = dataUtil.getModel(_oper, id=self.GoodsId)
+        self.operate_type = operate_type
+        self.good_ids = uid
+        operate = _getOperate(self.operate_type)
+        _session = operate.Session
+        model = dataUtil.getModel(operate, id=self.good_ids)
         if not model:
             return dataUtil.ResError(u"删除数据失败,不存在选择的商品,请刷新页面")
 
         model = model[0]
-        if self.OperType in ['sell', 'rollout', 'rollloss']:
+        if self.operate_type in ['sell', 'rollout', 'rollloss']:
             model.stock.isout = 0
-        if self.OperType == 'sell':
-            self.DeleteSellPro(model, _session)
-        elif self.OperType == "stock":
-            self.DeleteStock(model, _session)
-        elif self.OperType == 'rollback':
-            self.DeleteRollback(model, _session)
+        if self.operate_type == 'sell':
+            self.delete_sells(model, _session)
+        elif self.operate_type == "stock":
+            self.delete_storage(model, _session)
+        elif self.operate_type == 'rollback':
+            self.delete_roll_back(model, _session)
 
         _session.delete(model)
         try:
@@ -123,6 +122,7 @@ class DeleteModel(object):
             return dataUtil.ResError(u"删除数据失败")
         return dataUtil.ResOk(u"删除数据成功")
 
+    @staticmethod
     def __check_sell(self, model):
         """
         @attention: 检测是否存在退货信息
@@ -132,6 +132,7 @@ class DeleteModel(object):
             return dataUtil.ResError("存在关联数据,是否仍然继续删除?")
         return dataUtil.ResOk("ok")
 
+    @staticmethod
     def __check_stock(self, model):
         """
         @attention: 检测是有转出或则销售信息
@@ -141,60 +142,63 @@ class DeleteModel(object):
             return dataUtil.ResError(u"存在关联数据,是否仍然继续删除?")
         return dataUtil.ResOk("ok")
 
-    def CheckState(self, operType, productionId):
+    def check_state(self, operate_type, uid):
         """
         @attention: 检测入库商品或则销售的商品是否可以删除,如果存在关联数据
         则不能删除,这个位置没有加入对已经出账的信息进行检查
-        @param operType: 操作的类型
-        @param productionId:商品ID号  
+        @param operate_type: 操作的类型
+        @param uid:商品ID号  
         """
-        self.OperType = operType
-        self.GoodsId = productionId
-        _oper = _getOper(self.OperType)
-        _model = dataUtil.getModel(_oper, id=self.GoodsId)
+        self.operate_type = operate_type
+        self.good_ids = uid
+        _model = dataUtil.getModel(_getOperate(self.operate_type), id=self.good_ids)
         if not _model:
             return dataUtil.ResError(u"不存在数据行")
 
-        if self.OperType == 'stock':
+        if self.operate_type == 'stock':
             return self.__check_stock(_model[0])
-        elif self.OperType == "sell":
+
+        if self.operate_type == "sell":
             return self.__check_sell(_model[0])
+
         else:
             return dataUtil.ResOk("ok")
 
-    def __check_stock_id(self, userId):
+    @staticmethod
+    def __check_stock_id(self, user_id):
         """
         @attention: 检测是否存在供应商提供的入库商品信息
-        @param userId: 供应商ID号 
+        @param user_id: 供应商ID号 
         """
-        return dataUtil.getModel(_getOper('stock'), support_id=userId)
+        return dataUtil.getModel(_getOperate('stock'), support_id=user_id)
 
-    def __check_operate_id(self, userId, roleType):
+    @staticmethod
+    def __check_operate_id(self, user_id, role_type):
         """
         @attention: 检测是否存在某客户的相关数据
-        @param userId: 用户ID号
-        @param roleType:用户的类型  
+        @param user_id: 用户ID号
+        @param role_type:用户的类型  
         """
-        if roleType == "customer":
-            has_sell = dataUtil.getModel(_getOper("sell"), customer_id=userId)
+        if role_type == "customer":
+            has_sell = dataUtil.getModel(_getOperate("sell"), customer_id=user_id)
             has_roll = False
             has_stock = False
         else:
-            has_sell = dataUtil.getModel(_getOper("sell"), operator_id=userId)
-            has_roll = dataUtil.getModel(_getOper("rollout"), operator_id=userId)
-            has_stock = dataUtil.getModel(_getOper("stock"), operator_id=userId)
+            has_sell = dataUtil.getModel(_getOperate("sell"), operator_id=user_id)
+            has_roll = dataUtil.getModel(_getOperate("rollout"), operator_id=user_id)
+            has_stock = dataUtil.getModel(_getOperate("stock"), operator_id=user_id)
         return has_roll or has_sell or has_stock
 
-    def CheckDeleteUser(self, userId, roleType):
+    def can_delete_user(self, user_id, role_type):
         """
         @attention: 检测当前的数据是否可以删除,指代的是是否可以删除当前的用户数据
         对于商品数据，任何时候都可以删除，删除了之后，会自动将关联的商品数据删除掉
-        @param userId:当前用户id号
-        @param roleType: 当前的操作类型 部门还是用户
+        @param user_id:当前用户id号
+        @param role_type: 当前的操作类型 部门还是用户
         """
-        if roleType == "supporter":
-            return self.__check_stock_id(userId)
-        return self.__check_operate_id(userId, roleType)
+        if role_type.lower() == "supporter":
+            return self.__check_stock_id(user_id)
+        return self.__check_operate_id(user_id, role_type)
 
 
 _deleteModelUtil = DeleteModel()

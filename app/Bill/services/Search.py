@@ -89,13 +89,13 @@ class Search(object):
             offset = (pageNumber - 1) * pageSize
         else:
             offset = 0
-        _model = oper.Model
+        _model = oper.model
         _query = _model.query
         _query = _query.limit(limit).offset(offset)
         return _query
 
     def __get_date_filter(self, _oper):
-        model = _oper.Model
+        model = _oper.model
         query = model.query
         if self.DateFrom:
             query = query.filter(model.date >= self.DateFrom)
@@ -124,7 +124,7 @@ class Search(object):
         query = self.__get_date_filter(_oper)
         if self.ReqData.get("username"):
             self.ReqData['customer_id'] = self.ReqData.get("username")
-            query = self._fun(query, _oper.Model, self.ReqData, "customer_id", True)
+            query = self._fun(query, _oper.model, self.ReqData, "customer_id", True)
         models = query.all() or []
         sells = [model.sell for model in models]
         _oper = _getOper("sell")
@@ -153,7 +153,7 @@ class Search(object):
         query = self.__get_date_filter(_oper)
         if self.ReqData.get("username"):
             self.ReqData['customer_id'] = self.ReqData.get("username")
-            query = self._fun(query, _oper.Model, self.ReqData, "customer_id", True)
+            query = self._fun(query, _oper.model, self.ReqData, "customer_id", True)
         model = query.all()
         _data = []
         if model:
@@ -179,7 +179,7 @@ class Search(object):
         query = self.__get_date_filter(_oper)
         if self.ReqData.get("username"):
             self.ReqData['support_id'] = self.ReqData.get("username")
-            query = self._fun(query, _oper.Model, self.ReqData, "support_id", True)
+            query = self._fun(query, _oper.model, self.ReqData, "support_id", True)
         model = query.all()
         if model:
             _data = _oper.get_data(model, True)[-1]
@@ -649,7 +649,7 @@ class Search(object):
 
     def get_last_prev_bill(self, user_id, date):
         _oper = dataUtil.getDataBase("bill", "Finance")
-        model = _oper.Model
+        model = _oper.model
         _query = model.query.filter(model.customer_id == user_id,
                                     model.date < date).limit(1)
         model = _query.all()
@@ -676,10 +676,10 @@ class Search(object):
         @param user_id: 用户id号  
         """
         _oper = dataUtil.getDataBase("bill", "Finance")
-        query = _oper.Model.query.filter(_oper.Model.date >= start,
-                                         _oper.Model.date <= end)
+        query = _oper.model.query.filter(_oper.model.date >= start,
+                                         _oper.model.date <= end)
         if user_id:
-            query = query.filter(_oper.Model.customer_id == user_id)
+            query = query.filter(_oper.model.customer_id == user_id)
         model = query.all()
         return model
 

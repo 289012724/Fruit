@@ -50,7 +50,7 @@ class BillService(object):
         operator_id = kwargs.get("operator_id")
         customer_id = kwargs.get("customer_id")
         has_filled = kwargs.get("has_filled") or 0
-        bill = _getOper("bill").Model()
+        bill = _getOper("bill").model()
         bill.Init((date, total_money, next_money, level_money,
                    customer_id, operator_id))
         bill.has_filled = has_filled
@@ -96,7 +96,7 @@ class BillService(object):
         return money.price
 
     def __get_date_filter(self, _oper, start, end):
-        model = _oper.Model
+        model = _oper.model
         query = model.query
         query = query.filter(model.date >= start, model.date < end)
         return query
@@ -122,7 +122,7 @@ class BillService(object):
         customer_id = bill.customer_id
         _oper = dataUtil.getDataBase("rollback", "Production")
         query = self.__get_date_filter(_oper, start, end)
-        query = query.filter(_oper.Model.customer_id == customer_id)
+        query = query.filter(_oper.model.customer_id == customer_id)
         models = query.all()
         rmoney = [self.get_roll_money(model) for model in models] or [0]
         rmoney = sum(rmoney)
@@ -139,7 +139,7 @@ class BillService(object):
         customer_id = bill.customer_id
         _oper = dataUtil.getDataBase("sell", "Production")
         query = self.__get_date_filter(_oper, start, end)
-        query = query.filter(_oper.Model.customer_id == customer_id)
+        query = query.filter(_oper.model.customer_id == customer_id)
         models = query.all()
         rmoney = [self.get_sell_money(model) for model in models] or [0]
         rmoney = sum(rmoney)
@@ -204,7 +204,7 @@ class BillService(object):
                 _ses.add(bill_o)
 
     def GetBill(self, customer_id, date):
-        model = _billOpt.Model
+        model = _billOpt.model
         query = model.query.filter(model.customer_id == customer_id,
                                    model.date == date)
         models = query.all()
@@ -277,7 +277,7 @@ class BillService(object):
         return _billOpt.update()
 
     def GetToUpdateBill(self, start, end, userId):
-        model = _billOpt.Model
+        model = _billOpt.model
         query = model.query.filter(model.date >= start)
         if end:
             query = query.filter(model.date <= end)

@@ -356,14 +356,14 @@ class InitPage(object):
 
         if self.CheckFrom(form):
             if roleType == "department":
-                model = _departOper.Model
+                model = _departOper.model
                 query = model.query
                 query = _fun(query, model, form, "name", False)
                 query = _fun(query, model, form, "description", False)
                 models = query.all()
                 state, model = _departOper.get_data(models, True)
             else:
-                model = _userOper.Model
+                model = _userOper.model
                 query = _fun(model.query, model, form, "username", False)
                 if roleType != "user" or form.data.get("department_id"):
                     query = _fun(query, model, form, "department_id")

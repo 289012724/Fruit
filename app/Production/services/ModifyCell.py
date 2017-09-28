@@ -9,120 +9,119 @@ from functools import partial
 import copy
 from ...Finance.services.BillService import _BillService
 
-_getOper = partial(_dataBaseUtil.getDataBase, blueprint="Production")
+_getOperate = partial(_dataBaseUtil.getDataBase, blueprint="Production")
 
 
 class ModifyCell(object):
     def __init__(self):
         object.__init__(self)
-        self.__requstForm = None
+        self.__requestForm = None
         self.__model = None
         self.__blueprint = None
         self.__productionId = None
+        self.error = None
+        self.operate = None
 
     @property
-    def RequstForm(self):
-        return self.__requstForm
+    def request_form(self):
+        return self.__requestForm
 
-    @RequstForm.setter
-    def RequstForm(self, value):
-        self.__requstForm = value
-        self.ProductionId = self.RequstForm.get('production_id')
-        dataId = int(self.RequstForm.get('data_id'))
-        self.Model = _dataBaseUtil.getModel(_getOper(self.ProductionId), id=dataId)[0]
+    @request_form.setter
+    def request_form(self, value):
+        self.__requestForm = value
+        self.production_id = self.request_form.get('production_id')
+        self.model = _dataBaseUtil.getModel(_getOperate(self.production_id), id=int(self.request_form.get('data_id')))[0]
 
     @property
-    def Model(self):
+    def model(self):
         return self.__model
 
-    @Model.setter
-    def Model(self, value):
+    @model.setter
+    def model(self, value):
         self.__model = value
 
     @property
-    def BluePrint(self):
+    def blueprint(self):
         return self.__blueprint
 
-    @BluePrint.setter
-    def BluePrint(self, value):
+    @blueprint.setter
+    def blueprint(self, value):
         self.__blueprint = value
 
     @property
-    def ProductionId(self):
+    def production_id(self):
         return self.__productionId
 
-    @ProductionId.setter
-    def ProductionId(self, value):
+    @production_id.setter
+    def production_id(self, value):
         self.__productionId = value
 
     def __update_new(self, _ses, data):
         """
         @attention: 更新账单金额
         """
-        _oper = _getOper("money")
-        _moneyModel = self.GetMoneyModel(self.Model.money_id)
-        state, model = _oper.update_model(_moneyModel, **data)
+        operate = _getOperate("money")
+        _moneyModel = self.get_money_model(self.model.money_id)
+        state, model = operate.update_model(_moneyModel, **data)
         if state and model:
-            _oper.init_modelList()
+            operate.init_modelList()
             _ses.add(_moneyModel)
-            self.RequstForm['money_id'] = model.money_id
+            self.request_form['money_id'] = model.money_id
         else:
             self.error = _dataBaseUtil.ResErrorJson(u"更新价格失败%s" % model)
 
     def __add_new(self, data):
-        _oper = _getOper("money")
-        state, model = _oper.add_model(**data)
+        operate = _getOperate("money")
+        state, model = operate.add_model(**data)
         if state and model:
-            state, model = _oper.add()
+            state, model = operate.add()
             if state and model:
                 # 因为在存入数据库的时候需要将Money_id存储所以必须先新建金钱账单
-                self.RequstForm['money_id'] = model[0].id
+                self.request_form['money_id'] = model[0].id
             else:
                 self.error = _dataBaseUtil.ResErrorJson(u"更新价格失败%s" % model)
         else:
             self.error = _dataBaseUtil.ResErrorJson(u"更新价格输入参数有误%s" % model)
 
-    def GetMoneyModel(self, moeny_id):
-        _money = _getOper("money")
-        _moneyModel = _dataBaseUtil.getModel(_money, id=moeny_id)
+    @staticmethod
+    def get_money_model(self, uid):
+        _money = _getOperate("money")
+        _moneyModel = _dataBaseUtil.getModel(_money, id=uid)
         return _moneyModel[0]
 
-    def __add_new_money(self, _ses, operType, sellId):
-        money = self.RequstForm.get('money_id').split("@")
+    def __add_new_money(self, _ses):
+        money = self.request_form.get('money_id').split("@")
         _dict = {
             "money_type": money[0],
-            'tickets': self.RequstForm.get('tickets'),
+            'tickets': self.request_form.get('tickets'),
             "price": money[1],
-            "user_id": int(self.RequstForm.get('customer_id')),
-            "date": self.RequstForm.get('date')
+            "user_id": int(self.request_form.get('customer_id')),
+            "date": self.request_form.get('date')
         }
-        if self.Model.money_id != 1:
+        if self.model.money_id != 1:
             self.__update_new(_ses, _dict)
         else:
             self.__add_new(_dict)
 
-    def ModifyMoney(self, _ses, operType, sellId):
-        """
-        @attention: 修改付款数据
-        @param operType: 操作类型
-        @param sellId: 商品编号 
-        """
-        model = self.Model
-        _moneyModel = self.GetMoneyModel(self.Model.money_id)
+    def modify_money(self, session, operate_type, sell_id):
+        model = self.model
+        _moneyModel = self.get_money_model(self.model.money_id)
         # 记录下最原始的金额数据,以便后面可以回滚
-        money = self.RequstForm.get('money_id').split("@")
+        money = self.request_form.get('money_id').split("@")
         if float(money[-1]) == 0:
-            self.RequstForm['money_id'] = 1
+            self.request_form['money_id'] = 1
             if model.money_id != 1:
-                _ses.delete(_moneyModel)
+                session.delete(_moneyModel)
         else:
-            self.__add_new_money(_ses, operType, sellId)
+            self.__add_new_money(session, operate_type, sell_id)
 
-    def IsOk(self, state, model=True):
+    @staticmethod
+    def is_ok(self, state, model=True):
         return state and model
 
-    def UpdateStock(self, stock):
-        _stock = _getOper("stock")
+    @staticmethod
+    def update_stock(self, stock):
+        _stock = _getOperate("stock")
         stock_n = _stock.GetAbsTotal(stock.id)
         if stock_n == 0:
             _stock.SetOut(stock, 1)
@@ -132,25 +131,24 @@ class ModifyCell(object):
             _stock.SetOut(stock, 0)
         return True
 
-    def UpateStockData(self, modelOpt):
+    def update_stock_data(self, operate):
         """
         @attention: 修改入库的数据信息
         """
-        stock_n = modelOpt.GetAbsTotal(self.Model.id)
-        if stock_n == 0 and int(self.RequstForm.get("number")) < self.Model.number:
+        stock_n = operate.GetAbsTotal(self.model.id)
+        if stock_n == 0 and int(self.request_form.get("number")) < self.model.number:
             return _dataBaseUtil.ResErrorJson(u"入库数量少于已经卖出的数量,请修正")
 
-        state, model = modelOpt.update_model(self.Model, self.RequstForm)
-        if not self.IsOk(state, model):
+        state, model = operate.update_model(self.model, self.request_form)
+        if not self.is_ok(state, model):
             return _dataBaseUtil.ResErrorJson(u"修改内容失败")
 
+        operate.SetOut(model, 0)
         if stock_n == 0:
-            modelOpt.SetOut(model, 1)
-        else:
-            modelOpt.SetOut(model, 0)
-        _data = modelOpt.get_data([model], True)[-1]
-        return _dataBaseUtil.ResOkJson(_data)
+            operate.SetOut(model, 1)
 
+        _data = operate.get_data([model], True)[-1]
+        return _dataBaseUtil.ResOkJson(_data)
 
     # ===========================================================================
     # 更新退货信息
@@ -159,39 +157,39 @@ class ModifyCell(object):
         """
         @attention: 获取退货对入库商品做的关联影响
         """
-        stock = self.Model.sell.stock
-        _abs = _getOper("stock").GetAbsTotal(stock.id)
-        old = self.Model.number
-        new = self.RequstForm.get("number")
+        stock = self.model.sell.stock
+        _abs = _getOperate("stock").GetAbsTotal(stock.id)
+        old = self.model.number
+        new = self.request_form.get("number")
         level = _abs + new - old
         stock.isout = 0
         if level == 0:
             stock.isout = 1
         return stock
 
-    def _updateBack(self, modelOpt):
-        _ses = modelOpt.Session
+    def _update_back(self, operate):
         # 修正付款信息对退货的影响
-        self.ModifyMoney(_ses, "rollback", self.Model.id)
+        self.modify_money(operate.Session, "rollback", self.model.id)
         if self.error is not None:
             return self.error
-        data = self._updateBase(_ses, self._get_roll_back_stock)
+        data = self._base_update(operate.Session, self._get_roll_back_stock)
         if self.error is not None:
             return self.roll_back()
         return data
 
-    def UpdateRollBack(self, modelOpt):
+    def update_roll_back(self, operate):
         """
         @attention:  修正退货的信息
         """
-        sell = self.Model.sell
-        total_b = _getOper("sell").get_snap_number(sell.id)
-        snap = total_b + self.Model.number
-        if int(self.RequstForm.get("number")) > snap:
+        sell = self.model.sell
+        total_b = _getOperate("sell").get_snap_number(sell.id)
+        snap = total_b + self.model.number
+        if int(self.request_form.get("number")) > snap:
             return _dataBaseUtil.ResErrorJson(u"输入的数量超过可退数量,请修正")
-        return self._updateBack(modelOpt)
+        return self._update_back(operate)
 
-    def GetModelDate(self, model):
+    @staticmethod
+    def get_model_date(self, model):
         """
         @attention:  获取模型日期时间
         """
@@ -201,154 +199,153 @@ class ModifyCell(object):
         """
         @attention: 获取正常的销售模型数据
         """
-        model = self.modelOpt.get(id=self.Model.id)[-1]
-        sate, data = self.modelOpt.get_data(model, True)
+        model = self.operate.get(id=self.model.id)[-1]
+        sate, data = self.operate.get_data(model, True)
         if sate and data:
             return _dataBaseUtil.ResOkJson(data)
         return _dataBaseUtil.ResErrorJson(u"获取数据失败,请刷新页面")
 
-    def _adjust_bill(self, cuser, cdate, ouser, odate):
-        if _BillService.UpdateAllByTotal(cuser, cdate, ouser, odate):
+    def _adjust_bill(self, current_user, current_date, old_user, old_date):
+        if _BillService.UpdateAllByTotal(current_user, current_date, old_user, old_date):
             return self._get_model_info()
         self.error = _dataBaseUtil.ResErrorJson(_BillService.GetError())
 
-    def _updateBase(self, _ses, stockMethod):
+    def _base_update(self, _ses, method):
         """
         @attention: 基础的销售数据和账单数据
         """
         # 先做账单之间的修正,后面模型的内容会更新
-        ouser = self.Model.customer_id
-        odate = self.GetModelDate(self.Model.date)
-        cuser = self.RequstForm.get("customer_id")
-        cdate = self.RequstForm.get("date")
-        state, model = self.modelOpt.update_model(self.Model, self.RequstForm)
-        if state and model:
-            self.modelOpt.init_modelList()
-            stock = stockMethod()
-            _ses.add(stock)
-            _ses.add(model)
-            try:
-                _ses.commit()
-                return self._adjust_bill(cuser, cdate, ouser, odate)
-            except Exception, e:
-                self.error = _dataBaseUtil.ResErrorJson(u"更新销售信息失败%s" % e)
-        else:
+        old_user = self.model.customer_id
+        old_date = self.get_model_date(self.model.date)
+        current_user = self.request_form.get("customer_id")
+        current_date = self.request_form.get("date")
+        state, model = self.operate.update_model(self.model, self.request_form)
+        if not (state and model):
             self.error = _dataBaseUtil.ResErrorJson(u"更新数据失败:%s" % model)
+            return
+
+        self.operate.init_modelList()
+        stock = method()
+        _ses.add(stock)
+        _ses.add(model)
+        try:
+            _ses.commit()
+            return self._adjust_bill(current_user, current_date, old_user, old_date)
+        except Exception, e:
+            self.error = _dataBaseUtil.ResErrorJson(u"更新销售信息失败%s" % e)
 
     def roll_back(self):
         return self.error
 
-    def GetUserName(self, userid):
-        _oper = _dataBaseUtil.getDataBase("UserOperate", "User")
-        return _oper.get(id=userid)[-1][0]
+    @staticmethod
+    def get_user_name(self, uid):
+        return _dataBaseUtil.getDataBase("UserOperate", "User").get(id=uid)[-1][0]
 
-    def CheckSellNumber(self, modelOpt):
-        rollback_number = modelOpt.get_roll_back_number(self.Model.id)
-        if float(self.RequstForm.get("number")) < rollback_number:
+    def check_sell_number(self, operate):
+        rollback_number = operate.get_roll_back_number(self.model.id)
+        if float(self.request_form.get("number")) < rollback_number:
             self.error = _dataBaseUtil.ResErrorJson(u"销售数量小于退货数量,请修正")
 
-        if self.Model.customer_id != self.RequstForm.get("customer_id"):
-            roll_back = self.Model.roll_backs.all()
+        if self.model.customer_id != self.request_form.get("customer_id"):
+            roll_back = self.model.roll_backs.all()
             if roll_back:
                 self.error = _dataBaseUtil.ResErrorJson(u"存在与该销售数据有关的退货信息,不可修改客户名称")
 
-    def UpdateSell(self, modelOpt):
+    def update_sell(self, operate):
         # 因用户价格修改导致的更新
-        self.CheckSellNumber(modelOpt)
+        self.check_sell_number(operate)
         if self.error is not None:
             return self.error
 
-        _ses = modelOpt.Session
-        self.ModifyMoney(_ses, "sell", self.Model.id)
+        _ses = operate.Session
+        self.modify_money(_ses, "sell", self.model.id)
         if self.error is not None:
             return self.error
 
-        data = self._updateBase(_ses, self.GetTrueStockState)
+        data = self._base_update(_ses, self.get_stock_state)
         if self.error is not None:
             return self.roll_back()
         return data
 
-    def GetTrueStockState(self):
-        stock = self.Model.stock
+    def get_stock_state(self):
+        stock = self.model.stock
         stock.isout = 0
-        if self.GetStockLevel() == 0:
+        if self.get_stock_level() == 0:
             stock.isout = 1
         return stock
 
-    def UpdateRoll(self, modelOpt):
-        state, model = modelOpt.update_model(self.Model, self.RequstForm)
-        if not self.IsOk(state, model):
+    def update_roll(self, operate):
+        state, model = operate.update_model(self.model, self.request_form)
+        if not self.is_ok(state, model):
             return _dataBaseUtil.ResErrorJson(u"修改内容失败")
 
-        modelOpt.ModelList = self.GetTrueStockState()
-        state, models = modelOpt.update()
-        if state and models:
-            _data = modelOpt.get_data([model], True)[-1]
-            return _dataBaseUtil.ResOkJson(_data)
-        return _dataBaseUtil.ResErrorJson(u"修改内容失败:%s" % models)
+        operate.ModelList = self.get_stock_state()
+        state, models = operate.update()
+        if not (state and models):
+            return _dataBaseUtil.ResErrorJson(u"修改内容失败:%s" % models)
 
+        _data = operate.get_data([model], True)[-1]
+        return _dataBaseUtil.ResOkJson(_data)
 
-    def GetStockLevel(self):
-        stock = self.Model.stock
-        stock_n = _getOper("stock").GetAbsTotal(stock.id)
-        total = stock_n + self.Model.number
-        level = total - float(self.RequstForm.get("number"))
+    def get_stock_level(self):
+        stock = self.model.stock
+        stock_n = _getOperate("stock").GetAbsTotal(stock.id)
+        total = stock_n + self.model.number
+        level = total - float(self.request_form.get("number"))
         return level
 
-    def UpdateSellAndRoll(self, modelOpt):
+    def update_sell_and_roll(self, operate):
         """
         @attention: 修正销售和转出/报损的信息
         """
 
-        level = self.GetStockLevel()
+        level = self.get_stock_level()
         if level < 0:
             return _dataBaseUtil.ResErrorJson(u"输入数量大于库存数量,请修正")
 
-        if self.ProductionId == "sell":
-            roll_back = _getOper("sell").get_roll_back_number(self.Model.id)
-            if roll_back == self.Model.number and self.RequstForm.get("number") < self.Model.number:
+        if self.production_id == "sell":
+            roll_back = _getOperate("sell").get_roll_back_number(self.model.id)
+            if roll_back == self.model.number and self.request_form.get("number") < self.model.number:
                 return _dataBaseUtil.ResErrorJson(u"输入的数量小于已经退货的数量,请修正")
-            return self.UpdateSell(modelOpt)
-        return self.UpdateRoll(modelOpt)
+            return self.update_sell(operate)
+        return self.update_roll(operate)
 
-    def CheckeDataRBack(self, msg):
-        stockDate = self.Model.sell.date.strftime("%Y-%m-%d")
-        inputDate = self.RequstForm.get("date")
+    def __check_date(self, msg, model):
+        stock_date = model.date.strftime("%Y-%m-%d")
+        input_date = self.request_form.get("date")
 
-        if _dataBaseUtil.IsLessDate(inputDate, stockDate):
+        if _dataBaseUtil.IsLessDate(input_date, stock_date):
             return False, _dataBaseUtil.ResErrorJson(msg)
         return True, None
 
-    def CheckeDataStock(self, msg):
-        stockDate = self.Model.stock.date.strftime("%Y-%m-%d")
-        inputDate = self.RequstForm.get("date")
+    def check_date_roll_back(self, msg):
+        return self.__check_date(msg, self.model.sell)
 
-        if _dataBaseUtil.IsLessDate(inputDate, stockDate):
-            return False, _dataBaseUtil.ResErrorJson(msg)
-        return True, None
+    def check_date_stock(self, msg):
+        return self.__check_date(msg, self.model.stock)
 
-    def UpateModel(self, requestForm):
+    def update_model(self, request_form):
         """
         @attention: 修改数据项,同时需要修正入库的标记
         """
         self.error = None
-        self.RequstForm = requestForm
-        self.RequstForm['number'] = int(self.RequstForm.get("number"))
-        self.modelOpt = _getOper(self.ProductionId)
+        self.request_form = request_form
+        self.request_form['number'] = int(self.request_form.get("number"))
+        self.operate = _getOperate(self.production_id)
 
-        if self.ProductionId in ["rollout", "rollloss", "sell"]:
-            state, error = self.CheckeDataStock(u"选择的日期小于入库日期,请修正")
+        if self.production_id in ["rollout", "rollloss", "sell"]:
+            state, error = self.check_date_stock(u"选择的日期小于入库日期,请修正")
             if not state:
                 return error
-            return self.UpdateSellAndRoll(self.modelOpt)
+            return self.update_sell_and_roll(self.operate)
 
-        elif self.ProductionId == "rollback":
-            state, error = self.CheckeDataRBack(u"选择的日期小于销售的日期,请修正")
+        elif self.production_id == "rollback":
+            state, error = self.check_date_roll_back(u"选择的日期小于销售的日期,请修正")
             if not state:
                 return error
-            return self.UpdateRollBack(self.modelOpt)
+            return self.update_roll_back(self.operate)
 
-        return self.UpateStockData(self.modelOpt)
+        return self.update_stock_data(self.operate)
 
 
 _modifyCellUtil = ModifyCell()

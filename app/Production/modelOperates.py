@@ -35,8 +35,7 @@ class StockOperate(BaseOperate):
         return True, sells
 
     def _get_row(self, model, _key):
-        _row = []
-        _row.append(("all_money", float(model.number) * float(model.price)))
+        rows = [("all_money", float(model.number) * float(model.price))]
         for cell in _key:
             if cell in ['support_id', 'operator_id']:
                 state, data = user_op.get(id=getattr(model, cell))
@@ -47,44 +46,44 @@ class StockOperate(BaseOperate):
             if cell == "date":
                 data = data.strftime(DataFormat)
 
-            _row.append((cell, data))
-        return _row
+            rows.append((cell, data))
+        return rows
 
-    def GetTotal(self, stockId):
+    def GetTotal(self, uid):
         """
         @attention: 获取入库商品卖出和报损的总数
         """
-        model = self.get(id=stockId)[-1][0]
+        model = self.get(id=uid)[-1][0]
         _f = lambda obj: sum([_c.number for _c in obj])
         sells = _f(model.sells) or 0
         rolls = _f(model.rolls) or 0
         total = sells + rolls
         return total
 
-    def GetAbsTotal(self, stockId):
+    def GetAbsTotal(self, uid):
         """
         @attention: 获取商品的绝对数量
         """
-        model = self.get(id=stockId)[-1][0]
-        sell_roll = self.GetTotal(stockId)
+        model = self.get(id=uid)[-1][0]
+        sell_roll = self.GetTotal(uid)
         b_num = 0
         for sell in model.sells:
             b_num += sum([b.number for b in sell.roll_backs] or [0])
         return model.number - sell_roll + b_num
 
-    def SetOut(self, model, isout=1):
+    def SetOut(self, model, over=1):
         """
         @attention: 更新商品卖完的状态
         """
-        model.isout = isout
+        model.isout = over
         self.ModelList = model
         return self.update()
 
-    def UpdateOutState(self, stockId):
+    def UpdateOutState(self, uid):
         """
         @attention: 根据商品的ID号更新商品卖完的状态
         """
-        model = self.get(id=stockId)[-1][0]
+        model = self.get(id=uid)[-1][0]
         if model.isout == 1:
             return self.SetOut(model, 0)[0]
         return True
@@ -96,9 +95,14 @@ class MoneyOperate(BaseOperate):
         self.Model = models.money
         self.Column = ['money_type', 'tickets', 'price', 'user_id', 'date']
 
+    def delete_model(self, uid):
+        if uid != 1:
+            self.ModelList = self.Model.query.filter_by(id=uid).first()
+        return True, None
 
-def get_money(money_id):
-    state, data = MoneyOperate().get(id=money_id)
+
+def get_money(uid):
+    state, data = MoneyOperate().get(id=uid)
     if state and data:
         total = 0
         for cell in data:
@@ -108,8 +112,8 @@ def get_money(money_id):
         return 0
 
 
-def set_mongy_info(money_id):
-    state, data = MoneyOperate().get(id=money_id)
+def set_mongy_info(uid):
+    state, data = MoneyOperate().get(id=uid)
     total = 0
     if state and data:
         for cell in data: total += cell.price
@@ -135,8 +139,7 @@ class SellOperate(BaseOperate):
                 ('support_id', support_id)]
 
     def _get_row(self, model, _key):
-        _row = []
-        _row.append(("total_price", float(model.number) * float(model.price)))
+        _row = [("total_price", float(model.number) * float(model.price))]
         for cell in _key:
             if cell == 'stock_id':
                 self._get_stock_info(model.stock, _row)
@@ -154,24 +157,24 @@ class SellOperate(BaseOperate):
             _row.append((cell, data))
         return _row
 
-    def get_roll_back(self, idx):
+    def get_roll_back(self, uid):
         """
         @attention: 获取退货商品模型
         """
-        _model = self.get(id=idx)[-1][0]
+        _model = self.get(id=uid)[-1][0]
         return _model.roll_backs.all()
 
-    def get_roll_back_number(self, idx):
+    def get_roll_back_number(self, uid):
         """
         @attention:  获取销售商品的退货总数
         """
-        backs = self.get_roll_back(idx)
+        backs = self.get_roll_back(uid)
         b_num = sum([back.number for back in backs] or [0])
         return b_num
 
-    def get_snap_number(self, idx):
-        b_num = self.get_roll_back_number(idx)
-        model = self.get(id=idx)[-1][0]
+    def get_snap_number(self, uid):
+        b_num = self.get_roll_back_number(uid)
+        model = self.get(id=uid)[-1][0]
         return model.number - b_num
 
 

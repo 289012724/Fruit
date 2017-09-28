@@ -63,7 +63,7 @@ def get_count_price():
     """
     @attention: 获取当前商品入库时的价格以及可操作的数量
     """
-    return _initPageUtil.GetSellCount()
+    return _initPageUtil.get_sell_count()
 
 
 @Production.route("/get_stock", methods=['GET', 'POST'])
@@ -72,7 +72,7 @@ def get_stock():
     """
     @attention: 获取可以操作的所有商品信息
     """
-    return _initPageUtil.GetStocks()
+    return _initPageUtil.get_stocks()
 
 
 @Production.route("/check_delete_user/<string:roleType>/<int:userId>/")
@@ -82,7 +82,7 @@ def check_delete_user(roleType, userId):
     @param roleType: 传入的用户类型 。 用户 或则 部门
     @param userId: 用户id号  
     """
-    data = _deleteModelUtil.CheckDeleteUser(userId, roleType)
+    data = _deleteModelUtil.can_delete_user(userId, roleType)
     if data: return True
 
 
@@ -96,7 +96,7 @@ def sell_customer_id():
 
 @Production.route("/user_option_choice/<string:userType>", methods=['POST', 'GET'])
 def user_option_choice(userType):
-    return _initPageUtil.GetUserOption(userType)
+    return _initPageUtil.get_user_choice(userType)
 
 
 @Production.route("/upload_file", methods=['POST', 'GET'])

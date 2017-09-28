@@ -83,13 +83,13 @@ class Search(object):
             offset = (pageNumber - 1) * pageSize
         else:
             offset = 0
-        _model = oper.Model
+        _model = oper.model
         _query = _model.query
         _query = _query.limit(limit).offset(offset)
         return _query
 
     def __get_date_filter(self, _oper):
-        model = _oper.Model
+        model = _oper.model
         query = model.query
         if self.DateFrom:
             query = query.filter(model.date >= self.DateFrom)
@@ -101,7 +101,7 @@ class Search(object):
         """
         @attention: 获取当日转出的数量
         """
-        model = _getOper("rollout").Model
+        model = _getOper("rollout").model
         query = stock.rolls.filter(model.date >= self.DateFrom,
                                    model.date <= self.DateTo).filter(model.roll_type == u'转出')
         numbers = sum([_r.number for _r in query.all()] or [0])
@@ -111,7 +111,7 @@ class Search(object):
         """
         @attention: 获取当日报损的数量
         """
-        model = _getOper("rollloss").Model
+        model = _getOper("rollloss").model
         query = stock.rolls.filter(model.date >= self.DateFrom,
                                    model.date <= self.DateTo).filter(model.roll_type == u'报损')
         numbers = sum([_r.number for _r in query.all()] or [0])
@@ -121,7 +121,7 @@ class Search(object):
         """
         @attention: 获取昨日的转出和报损的数量
         """
-        model = _getOper("rollloss").Model
+        model = _getOper("rollloss").model
         query = stock.rolls.filter(model.date < self.DateFrom)
         _lt = sum([_r.number for _r in query.all()] or [0])
         return _lt
@@ -131,7 +131,7 @@ class Search(object):
         @attention: 获取当日买出的商品
         @return:  今日卖出数量 和 昨日卖出数量
         """
-        model = _getOper("sell").Model
+        model = _getOper("sell").model
         query = stock.sells.filter(model.date >= self.DateFrom, model.date <= self.DateTo)
         numbers = sum([sell.number for sell in query.all()] or [0])
         _lt = stock.sells.filter(model.date < self.DateFrom)
@@ -193,7 +193,7 @@ class Search(object):
         self.DateFrom = None
         _query = self.__get_date_filter(_oper)
         # 截至到今日仍然没有卖出的商品
-        models = _query.filter(_oper.Model.isout == 0).all()
+        models = _query.filter(_oper.model.isout == 0).all()
         # 今日卖出的商品
         _sells = self.__get_current_sell_all_stock()
         # 今日转出和报损的商品
@@ -216,7 +216,7 @@ class Search(object):
         @attention: 获取昨日的退货信息
         """
         _oper = _getOper("rollback")
-        model = _oper.Model
+        model = _oper.model
         sells = stock.sells.all()
         backs = []
         for sell in sells:
@@ -229,7 +229,7 @@ class Search(object):
         @attention: 获取今日的退货信息
         """
         _oper = _getOper("rollback")
-        model = _oper.Model
+        model = _oper.model
         sells = stock.sells.all()
         backs = []
         for sell in sells:
@@ -368,7 +368,7 @@ class Search(object):
 
     def get_agent_roll(self, stock, roll_type):
         _oper = _getOper("rollout")
-        models = stock.rolls.filter(_oper.Model.roll_type == roll_type).all()
+        models = stock.rolls.filter(_oper.model.roll_type == roll_type).all()
         data = _oper.get_data(models, True)[-1]
         for one, model in zip(data, models):
             self.__get_sell_stock_info(one, model.stock)
