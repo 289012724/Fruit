@@ -69,7 +69,7 @@ def _delete_money(uid):
 
 
 def _adjust_bill(current_uer, current_date):
-    return _BillService.UpdateAllByTotal(current_uer, current_date, current_uer, current_date)
+    return _BillService.update_all_by_total(current_uer, current_date, current_uer, current_date)
 
 
 def _add_sell(form, stock_num):
@@ -95,7 +95,7 @@ def _add_sell(form, stock_num):
         return _dataUtil.ResErrorJson(u"添加销售信息失败%s" % models)
 
     if not _adjust_bill(model.customer_id, model.date.strftime("%Y-%m-%d")):
-        return _dataUtil.ResErrorJson(_BillService.GetError())
+        return _dataUtil.ResErrorJson(_BillService.get_error())
 
     state, data = operate.get_data([model], True)
     return _dataUtil.ResOkJson(data)
@@ -187,7 +187,7 @@ def _roll_back_sell(form, operate, model):
     if _adjust_bill(model.customer_id, model.date.strftime("%Y-%m-%d")):
         _data = operate.get_data([model], True)[-1]
         return _dataUtil.ResOk(_data)
-    return _dataUtil.ResOk(_BillService.GetError())
+    return _dataUtil.ResOk(_BillService.get_error())
 
 
 def translate_roll_back(form):

@@ -12,7 +12,7 @@ from .services.InitPage import _initPageUtil
 
 @Finance.route("/rebund", methods=['POST', 'GET'])
 def rebund():
-    state, data, date = _initPageUtil.GetRebund()
+    state, data, date = _initPageUtil.get_rebund()
     if state: return jsonify(data)
     data.operator_id.data = current_user.username
     return render_template("Finance/rebund.html", form=data, date=date, operType="rebund")
@@ -20,7 +20,7 @@ def rebund():
 
 @Finance.route("/writeoff", methods=['POST', 'GET'])
 def writeoff():
-    state, data, date = _initPageUtil.GetRebate("writeoff")
+    state, data, date = _initPageUtil.get_rebate("writeoff")
     if state: return jsonify(data)
     data.operator_id.data = current_user.username
     return render_template("Finance/rebate.html", form=data, date=date, operType="writeoff")
@@ -28,7 +28,7 @@ def writeoff():
 
 @Finance.route("/rebate", methods=['POST', 'GET'])
 def rebate():
-    state, data, date = _initPageUtil.GetRebate("rebate")
+    state, data, date = _initPageUtil.get_rebate("rebate")
     if state: return jsonify(data)
     data.operator_id.data = current_user.username
     return render_template("Finance/rebate.html", form=data, date=date, operType="rebate")
@@ -36,7 +36,7 @@ def rebate():
 
 @Finance.route("/modify/<string:operType>/<int:dataId>", methods=['POST', 'GET'])
 def modify(operType, dataId):
-    state, data, date = _initPageUtil.Modify(operType, dataId)
+    state, data, date = _initPageUtil.modify(operType, dataId)
     if state:
         return jsonify(data)
     if operType != "writeoff":
@@ -49,12 +49,12 @@ def modify(operType, dataId):
 @Finance.route("/delete_data", methods=['POST', 'GET'])
 def delete_data():
     data = request.form.to_dict()
-    return jsonify(_initPageUtil.DeleteCell(data))
+    return jsonify(_initPageUtil.delete_cell(data))
 
 
 @Finance.route("/search/<string:operType>", methods=['POST', 'GET'])
 def search(operType):
-    state, form = _initPageUtil.Search(operType)
+    state, form = _initPageUtil.search(operType)
     if state:
         return jsonify(form)
     return render_template("Finance/search.html", form=form, operType=operType)

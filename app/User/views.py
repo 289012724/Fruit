@@ -10,7 +10,7 @@
 """
 from . import User
 from flask_login import login_user, current_user, logout_user
-from flask import render_template, redirect, url_for, request, jsonify, flash
+from flask import render_template, redirect, url_for, request, jsonify
 from .. import load_manager
 
 from ..common import json_return
@@ -23,13 +23,12 @@ from .page_config import page_table_configs
 from .. import basedir
 import time
 
-blueprint = "User"
-_getOper = partial(dataUtil.getDataBase, blueprint=blueprint)
+_getOperate = partial(dataUtil.getDataBase, blueprint="User")
 
 
 @load_manager.user_loader
 def load_user(user_id):
-    user = dataUtil.getModel(_getOper("UserOperate"), id=int(user_id))
+    user = dataUtil.getModel(_getOperate("UserOperate"), id=int(user_id))
     if user:
         return user[0]
     return None
@@ -57,7 +56,7 @@ def modifyDate():
 @User.route('/login', methods=['POST', 'GET'])
 def login():
     ok, _str = _initPage.check_license(basedir)
-    state, form, model = _initPage.GetLogin()
+    state, form, model = _initPage.get_login()
 
     if not (state and ok):
         return render_template('User/login.html', form=form, state=ok, _str=_str)
@@ -84,13 +83,13 @@ def logout():
 @User.route('/addUser/<string:roleType>', methods=['POST', 'GET'])
 @json_return
 def add_user(roleType):
-    data = _initPage.GetRegister(request.form.get("operType"))
+    data = _initPage.register(request.form.get("operType"))
     return data
 
 
 @User.route('/deleteUser/<string:roleType>', methods=['POST', 'GET'])
 def delete_user(roleType):
-    state = _initPage.Delete(roleType)
+    state = _initPage.delete(roleType)
     if state:
         return dataUtil.ResOkJson(u"删除成功")
     return dataUtil.ResErrorJson(u"删除失败")
@@ -98,7 +97,7 @@ def delete_user(roleType):
 
 @User.route('/changePass', methods=['POST', 'GET'])
 def change_pass():
-    state, form = _initPage.ChangePass()
+    state, form = _initPage.change_pass()
     if state:
         return redirect(url_for('.login'))
     return render_template('User/change_pass.html', form=form, username=current_user.username)
@@ -106,7 +105,7 @@ def change_pass():
 
 @User.route("/resetPass/<int:userId>", methods=["POST", "GET"])
 def resetPass(userId):
-    state, form, model = _initPage.ReSetPass(userId)
+    state, form, model = _initPage.reset_pass(userId)
     if state:
         return "1"
     target = url_for(".resetPass", userId=userId)
@@ -115,7 +114,7 @@ def resetPass(userId):
 
 @User.route('/modfiy_data/<string:roleType>', methods=['GET', 'POST'])
 def modify_data(roleType):
-    model = _initPage.ModifyCell(roleType)
+    model = _initPage.modify_cell(roleType)
     if not model:
         return jsonify([2, {''}, u'修改失败'])
 
@@ -129,7 +128,7 @@ def modify_data(roleType):
 
 @User.route('/modify/<string:roleType>/<int:user_id>', methods=['POST', 'GET'])
 def modify(roleType, user_id):
-    form, choices = _initPage.GetRegisterPage(roleType, user_id)
+    form, choices = _initPage.register_page(roleType, user_id)
     return render_template('User/register.html',
                            form=form, choices=choices,
                            roleType=roleType,
@@ -139,7 +138,7 @@ def modify(roleType, user_id):
 
 @User.route('/page_control/<string:roleType>', methods=['GET', 'POST'])
 def get_index_page(roleType):
-    form, choices = _initPage.GetRegisterPage(roleType, -1)
+    form, choices = _initPage.register_page(roleType, -1)
     if roleType == "User":
         form.password.data = "888888"
     return render_template('User/register.html',
@@ -152,7 +151,7 @@ def get_index_page(roleType):
 @User.route('/load_all/<string:roleType>', methods=['GET', 'POST'])
 @json_return
 def load_all_user(roleType):
-    return _initPage.LoadData(roleType)
+    return _initPage.load_data(roleType)
 
 
 @User.route('/table_config/<string:roleType>')
@@ -171,7 +170,7 @@ def load_datagrid(roleType):
 
 @User.route('/load_user/<int:user_id>')
 def get_user_by_id(user_id):
-    model = dataUtil.getModel(_getOper("UserOperate"), id=user_id)
+    model = dataUtil.getModel(_getOperate("UserOperate"), id=user_id)
     if model:
         return model[0].username
     return ""
@@ -181,14 +180,14 @@ def get_user_by_id(user_id):
 @json_return
 def all_users(roleType):
     _ids = ["User", "Custemer", "Supporter"].index(roleType) or 0
-    name = _initPage.GetAllSupportName(_ids)
+    name = _initPage.get_supporter_name(_ids)
     return name
 
 
 @User.route("/search/<string:roleType>", methods=['GET', 'POST'])
 def search(roleType):
     roleType = roleType.lower()
-    state, formOrData = _initPage.UserSearch(roleType)
+    state, formOrData = _initPage.user_search(roleType)
     if state:
         return jsonify(formOrData)
     return render_template("User/search.html", form=formOrData, roleType=roleType)

@@ -29,38 +29,38 @@ class Search(object):
         self.ReqData = None
 
     @property
-    def FormError(self):
+    def form_error(self):
         return self.__formError
 
-    @FormError.setter
-    def FormError(self, value):
+    @form_error.setter
+    def form_error(self, value):
         self.__formError = value
 
     @property
-    def PageNumber(self):
+    def page_number(self):
         return self.__pageNumber
 
-    @PageNumber.setter
-    def PageNumber(self, value):
+    @page_number.setter
+    def page_number(self, value):
         self.__pageNumber = int(value)
 
     @property
-    def PageSize(self):
+    def page_size(self):
         return self.__pageSize
 
-    @PageSize.setter
-    def PageSize(self, value):
+    @page_size.setter
+    def page_size(self, value):
         self.__pageSize = int(value)
 
-    def CheckFrom(self, form):
-        self.FormError = None
+    def check_form(self, form):
+        self.form_error = None
         if form.is_submitted() or request.method.upper() == "POST":
             if form.validate_on_submit():
                 return True
-            self.FormError = form.errors
+            self.form_error = form.errors
         return False
 
-    def _fun(self, query, model, form, key, isEqual=True):
+    def _fun(self, query, model, form, key, is_equal=True):
         if not isinstance(form, dict):
             _obj = form.data
         else:
@@ -71,25 +71,26 @@ class Search(object):
                 data = data.replace("*", "%")
             if key.endswith("id"): data = int(data)
             _type = getattr(model, key)
-            if isEqual:
+            if is_equal:
                 query = query.filter(_type == data)
             else:
                 query = query.filter(_type.like("%s" % data))
         return query
 
-    def __get__search(self, pageNumber, pageSize, oper):
-        limit = pageSize
-        if pageNumber > 0:
-            offset = (pageNumber - 1) * pageSize
+    @staticmethod
+    def __get__search(self, page_number, page_size, operate):
+        limit = page_size
+        if page_number > 0:
+            offset = (page_number - 1) * page_size
         else:
             offset = 0
-        _model = oper.model
+        _model = operate.model
         _query = _model.query
         _query = _query.limit(limit).offset(offset)
         return _query
 
-    def __get_date_filter(self, _oper):
-        model = _oper.model
+    def __get_date_filter(self, operate):
+        model = operate.model
         query = model.query
         if self.DateFrom:
             query = query.filter(model.date >= self.DateFrom)
@@ -149,13 +150,13 @@ class Search(object):
         stock = [back.sell.stock for back in backs]
         return stock
 
-    def __get_current_roll_all_stock(self, operType):
+    def __get_current_roll_all_stock(self, operate_type):
         """
         @attention: 获取当日转出的商品/报损的商品
         """
-        _oper = _getOper(operType)
+        operate = _getOper(operate_type)
         self.DateFrom = self.ReqData.get("dateFrom")
-        query = self.__get_date_filter(_oper)
+        query = self.__get_date_filter(operate)
         rolls = query.all()
         stock = [roll.stock for roll in rolls]
         return stock
@@ -164,13 +165,13 @@ class Search(object):
         """
         @attention: 获取当日买出的商品的入库信息
         """
-        _oper = _getOper("sell")
         self.DateFrom = self.ReqData.get("dateFrom")
-        query = self.__get_date_filter(_oper)
+        query = self.__get_date_filter(_getOper("sell"))
         sells = query.all()
         stock = [sell.stock for sell in sells]
         return stock
 
+    @staticmethod
     def __sort_stock(self, one, two):
         if one.id > two.id:
             return 1
@@ -180,8 +181,7 @@ class Search(object):
         """
         @attention: 获取今日入库的商品
         """
-        _oper = _getOper("stock")
-        _query = self.__get_date_filter(_oper)
+        _query = self.__get_date_filter(_getOper("stock"))
         models = _query.all()
         return models
 
@@ -189,11 +189,11 @@ class Search(object):
         """
         @attention: 获取截至到今日所有的存储信息
         """
-        _oper = _getOper("stock")
+        operate = _getOper("stock")
         self.DateFrom = None
-        _query = self.__get_date_filter(_oper)
+        _query = self.__get_date_filter(operate)
         # 截至到今日仍然没有卖出的商品
-        models = _query.filter(_oper.model.isout == 0).all()
+        models = _query.filter(operate.model.isout == 0).all()
         # 今日卖出的商品
         _sells = self.__get_current_sell_all_stock()
         # 今日转出和报损的商品
@@ -208,53 +208,49 @@ class Search(object):
         models.sort(self.__sort_stock)
         return models
 
-    def __get_slice_data(self, allData):
-        return allData
+    @staticmethod
+    def __get_slice_data(self, data):
+        return data
 
-    def __get_prve_back_number(self, stock):
+    def __get_prev_back_number(self, stock):
         """
         @attention: 获取昨日的退货信息
         """
-        _oper = _getOper("rollback")
-        model = _oper.model
+        model = _getOper("rollback").model
         sells = stock.sells.all()
         backs = []
         for sell in sells:
-            cbacks = sell.roll_backs.filter(model.date < self.DateFrom).all()
-            backs.extend(cbacks)
+            backs.extend(sell.roll_backs.filter(model.date < self.DateFrom).all())
         return sum([back.number for back in backs] or [0])
 
     def __get_current_back_number(self, stock):
         """
         @attention: 获取今日的退货信息
         """
-        _oper = _getOper("rollback")
-        model = _oper.model
+        model = _getOper("rollback").model
         sells = stock.sells.all()
         backs = []
         for sell in sells:
-            cbacks = sell.roll_backs.filter(model.date >= self.DateFrom, model.date <= self.DateTo).all()
-            backs.extend(cbacks)
+            backs.extend(sell.roll_backs.filter(model.date >= self.DateFrom, model.date <= self.DateTo).all())
         return sum([back.number for back in backs] or [0])
 
     def __get_all_data(self):
-        self.PageNumber = self.ReqData.get("pageNumber")
-        self.PageSize = self.ReqData.get("pageSize")
+        self.page_number = self.ReqData.get("pageNumber")
+        self.page_size = self.ReqData.get("pageSize")
         self.DateTo = self.ReqData.get("dateTo")
 
         # 今天所有交互的商品
         stocks = self.__get_stock()
-        _oper = _getOper("stock")
-        data = _oper.get_data(stocks, True)[-1]
+        data = _getOper("stock").get_data(stocks, True)[-1]
         self.DateFrom = self.ReqData.get("dateFrom")
-        currentStock = self.__get_current_stock()
+        current_stock = self.__get_current_stock()
         for one, stock in zip(data, stocks):
             sells, _lt_sell = self.__get_current_sell(stock)
             b_num = self.__get_current_back_number(stock)
             rollloss = self.__get_current_rollloss(stock)
             rollout = self.__get_current_rollout(stock)
             _lt_roll = self.__get_loss_out(stock)
-            if stock in currentStock:
+            if stock in current_stock:
                 one["stock"] = stock.number
                 one["prestock"] = 0
                 one['sell'] = sells
@@ -264,7 +260,7 @@ class Search(object):
                 one['rollback'] = b_num
             else:
                 b_num = self.__get_current_back_number(stock)
-                _lt_b = self.__get_prve_back_number(stock)
+                _lt_b = self.__get_prev_back_number(stock)
                 one['stock'] = 0
                 one['sell'] = sells
                 one['rollout'] = rollout
@@ -278,18 +274,20 @@ class Search(object):
         data = self.__get_all_data()
         return len(data), self.__get_slice_data(data)
 
-    def buyorsell(self):
+    def buy_or_sell(self):
         length, _data = self.get_all_info()
         for cell in _data:
             cell['total_price'] = float(cell.get("price") or 0) * float(cell.get("curstock") or 0)
         return dataUtil.ResOk({'data': _data, 'length': length})
 
+    @staticmethod
     def __get_has_money(self, sell):
         _money = _getOper("money")
         _model = dataUtil.getModel(_money, id=sell.money_id)[0]
         return _model.price
 
-    def __get__roll_back_numebr(self, sell):
+    @staticmethod
+    def __get__roll_back_number(self, sell):
         roll_back = sell.roll_backs.all()
         number = sum([_r.number for _r in roll_back] or [0])
         return number
@@ -297,6 +295,7 @@ class Search(object):
     # ===========================================================================
     # 商品销售表
     # ===========================================================================
+    @staticmethod
     def __get_sell_stock_info(self, one, stock):
         one['name'] = stock.name
         one['brand_id'] = stock.brand_id
@@ -311,8 +310,7 @@ class Search(object):
         """
         @attention: 获取商品的退货信息
         """
-        _oper = _getOper("rollback")
-        _query = self.__get_date_filter(_oper)
+        _query = self.__get_date_filter(_getOper("rollback"))
         models = _query.all()
         sells = [roll.sell for roll in models]
         return sells, models
@@ -322,8 +320,7 @@ class Search(object):
         @attention: 退货信息中销售数量为0
         """
         sells, backs = self.__get_roll_back()  # 退货的销售信息
-        _oper = _getOper("sell")
-        data = _oper.get_data(sells, True)[-1]
+        data = _getOper("sell").get_data(sells, True)[-1]
         for one, back in zip(data, backs):
             stock = back.sell.stock
             self.__get_sell_stock_info(one, stock)
@@ -340,14 +337,14 @@ class Search(object):
         """
         @attention:  销售表中退货数量为 0 
         """
-        self.PageNumber = self.ReqData.get("pageNumber")
-        self.PageSize = self.ReqData.get("pageSize")
+        self.page_number = self.ReqData.get("pageNumber")
+        self.page_size = self.ReqData.get("pageSize")
         self.DateFrom = self.ReqData.get("dateFrom")
         self.DateTo = self.ReqData.get("dateTo")
-        _oper = _getOper("sell")
-        _query = self.__get_date_filter(_oper)
+        operate = _getOper("sell")
+        _query = self.__get_date_filter(operate)
         models = _query.all()
-        _sells = _oper.get_data(models, True)[-1] or []
+        _sells = operate.get_data(models, True)[-1] or []
         for one, model in zip(_sells, models):
             stock = model.stock
             self.__get_sell_stock_info(one, stock)
@@ -367,9 +364,9 @@ class Search(object):
         return dataUtil.ResOk({'data': _sells, 'length': len(_sells)})
 
     def get_agent_roll(self, stock, roll_type):
-        _oper = _getOper("rollout")
-        models = stock.rolls.filter(_oper.model.roll_type == roll_type).all()
-        data = _oper.get_data(models, True)[-1]
+        operate = _getOper("rollout")
+        models = stock.rolls.filter(operate.model.roll_type == roll_type).all()
+        data = operate.get_data(models, True)[-1]
         for one, model in zip(data, models):
             self.__get_sell_stock_info(one, model.stock)
             one["number"] = model.number
@@ -400,9 +397,8 @@ class Search(object):
         return data
 
     def get_agent_sell(self, stock):
-        _oper = _getOper("sell")
         models = stock.sells
-        data = _oper.get_data(models, True)[-1]
+        data = _getOper("sell").get_data(models, True)[-1]
         for one, model in zip(data, models):
             self.__get_sell_stock_info(one, model.stock)
             one["number"] = model.number
@@ -412,10 +408,9 @@ class Search(object):
         return data
 
     def get_agent_stock(self):
-        _oper = _getOper("stock")
         query = self.__get_date_filter(_oper)
         models = query.all()
-        data = _oper.get_data(models, True)[-1]
+        data = _getOper("stock").get_data(models, True)[-1]
         for one in data:
             one["number"] = - one.get("number")
             one["_type"] = u"入库"
@@ -423,14 +418,10 @@ class Search(object):
             one["notice"] = ""
             one["all_price"] = one.get("number") * one.get("price")
         for stock in models:
-            sell = self.get_agent_sell(stock)
-            back = self.get_agent_roll_back(stock)
-            rout = self.get_agent_roll_out(stock)
-            rloss = self.get_agent_roll_loss(stock)
-            data.extend(sell)
-            data.extend(back)
-            data.extend(rout)
-            data.extend(rloss)
+            data.extend(self.get_agent_sell(stock))
+            data.extend(self.get_agent_roll_back(stock))
+            data.extend(self.get_agent_roll_out(stock))
+            data.extend(self.get_agent_roll_loss(stock))
         return data
 
     # ===========================================================================
@@ -440,16 +431,16 @@ class Search(object):
         """
         @attention: 代销的商品价格使用备注价格 price_a
         """
-        self.PageNumber = self.ReqData.get("pageNumber")
-        self.PageSize = self.ReqData.get("pageSize")
+        self.page_number = self.ReqData.get("pageNumber")
+        self.page_size = self.ReqData.get("pageSize")
         self.DateFrom = self.ReqData.get("dateFrom")
         self.DateTo = self.ReqData.get("dateTo")
         data = self.get_agent_stock()
-        _fun = lambda one: one.get("category").encode("UTF-8") == "代销"
-        _sells = filter(_fun, data)
+        _sells = filter(lambda one: one.get("category").encode("UTF-8") == "代销", data)
         return dataUtil.ResOk({'data': _sells, 'length': len(_sells)})
 
-    def sortResult(self, one, two):
+    @staticmethod
+    def sort_result(self, one, two):
         _date1 = one.get("date")
         _date2 = two.get("date")
         if dataUtil.IsLessDate(_date1, _date2):
@@ -464,11 +455,11 @@ class Search(object):
         """
         @attention: 获取报损产生的利润信息
         """
-        _oper = _getOper("rollloss")
-        _query = self.__get_date_filter(_oper)
+        operate = _getOper("rollloss")
+        _query = self.__get_date_filter(operate)
         rolls = _query.all()
-        datas = _oper.get_data(rolls, True)[-1]
-        for one, roll in zip(datas, rolls):
+        data = operate.get_data(rolls, True)[-1]
+        for one, roll in zip(data, rolls):
             stock = roll.stock
             self.__get_sell_stock_info(one, roll.stock)
             _number = roll.number
@@ -479,15 +470,14 @@ class Search(object):
             one['all_price'] = one['sell_all'] - one['stock_all']
             one['_type'] = u"报损"
             one['customer_id'] = u"报损"
-        return datas
+        return data
 
     def _profit_back(self):
         """
         @attention: 退货信息中销售数量为0
         """
         sells, backs = self.__get_roll_back()  # 退货的销售信息
-        _oper = _getOper("sell")
-        data = _oper.get_data(sells, True)[-1]
+        data = _getOper("sell").get_data(sells, True)[-1]
         for one, back in zip(data, backs):
             sell = back.sell
             stock = sell.stock
@@ -501,14 +491,14 @@ class Search(object):
         return data
 
     def profit(self):
-        self.PageNumber = self.ReqData.get("pageNumber")
-        self.PageSize = self.ReqData.get("pageSize")
+        self.page_number = self.ReqData.get("pageNumber")
+        self.page_size = self.ReqData.get("pageSize")
         self.DateFrom = self.ReqData.get("dateFrom")
         self.DateTo = self.ReqData.get("dateTo")
-        _oper = _getOper("sell")
-        _query = self.__get_date_filter(_oper)
+        operate = _getOper("sell")
+        _query = self.__get_date_filter(operate)
         models = _query.all()
-        _sells = _oper.get_data(models, True)[-1]
+        _sells = operate.get_data(models, True)[-1]
         for one, model in zip(_sells, models):
             stock = model.stock
             self.__get_sell_stock_info(one, stock)
@@ -518,65 +508,66 @@ class Search(object):
             one["all_number"] = _number
             one["all_price"] = _number * (model.price - stock.price)
             one['_type'] = u"销售"
-        _fun = lambda one: one.get("category").encode("UTF-8") == "购进"
         _b_sell = self._profit_back() or []
         _r_loss = self._profit_roll_loss() or []
         _sells.extend(_b_sell)
         _sells.extend(_r_loss)
-        _sells = filter(_fun, _sells)
+        _sells = filter(lambda one: one.get("category").encode("UTF-8") == "购进", _sells)
         return dataUtil.ResOk({'data': _sells, 'length': len(_sells)})
 
-    def Main(self, operType):
+    def main(self, operate_type):
         self.ReqData = request.form.to_dict()
-        data = getattr(self, operType)()
+        data = getattr(self, operate_type)()
         _ds = data.get("msg").get("data")
         if _ds:
-            _ds.sort(self.sortResult)
+            _ds.sort(self.sort_result)
             data['msg']['data'] = _ds
         return data
 
-    def LoadInitData(self, operType):
+    def load_init_data(self, operate_type):
         dateTo = dataUtil.CurrentDateStr
-        if "buyorsell" == operType.lower():
-            dateFrom = dataUtil.GetInitPrevDate(dateTo, 0)
+        if "buyorsell" == operate_type.lower():
+            date_from = dataUtil.GetInitPrevDate(dateTo, 0)
         else:
-            dateFrom = dataUtil.GetInitPrevDate(dateTo, 0)
-        self.ReqData = {'pageSize': 1000, 'pageNumber': 1, 'dateFrom': dateFrom, "dateTo": dateTo}
-        all_datas = getattr(self, operType)()
-        _ds = all_datas.get("msg").get('data')
-        _ds.sort(self.sortResult)
+            date_from = dataUtil.GetInitPrevDate(dateTo, 0)
+        self.ReqData = {'pageSize': 1000, 'pageNumber': 1, 'dateFrom': date_from, "dateTo": dateTo}
+        _ds = getattr(self, operate_type)().get("msg").get('data')
+        _ds.sort(self.sort_result)
         return _ds
 
-    def get_page_config(self, operType):
-        config = page_table_configs.get(operType.lower())
+    @staticmethod
+    def get_page_config(self, operate_type):
+        config = page_table_configs.get(operate_type.lower())
         data = [(one.get("field"), one.get("title")) for one in config]
         column = [one[0] for one in data]
         first = [one[1] for one in data]
         return first, column
 
-    def get_data(self, operType):
-        data = self.Main(operType).get('msg').get("data")
-        first, column = self.get_page_config(operType)
+    def get_data(self, operate_type):
+        first, column = self.get_page_config(operate_type)
         _result = [first]
-        [_result.append([one.get(col) for col in column]) for one in data]
+        [_result.append([one.get(col) for col in column]) for one in self.main(operate_type).get('msg').get("data")]
         return _result
 
-    def __get_file(self, fileName):
-        return current_app.config.get("DOWNLOAD_FILE") + "/" + fileName
+    @staticmethod
+    def __get_file(self, file_name):
+        return current_app.config.get("DOWNLOAD_FILE") + "/" + file_name
 
-    def get_file_name(self, operType, isGbk=False):
+    @staticmethod
+    def get_file_name(self, operate_type, gbk=False):
         data = {"sell": u"销售表", "profit": u'利润表',
                 "agent": u"代销表", "buyorsell": u"进销存表"}
-        if isGbk:
-            fileName = "%s_%s_%s.xlsx" % (dataUtil.CurrentDateStr,
-                                          current_user.username,
-                                          data.get(operType))
+        if gbk:
+            file_name = "%s_%s_%s.xlsx" % (dataUtil.CurrentDateStr,
+                                           current_user.username,
+                                           data.get(operate_type))
         else:
-            fileName = "%s_%s_%s.xlsx" % (dataUtil.CurrentDateStr,
-                                          current_user.id,
-                                          operType)
-        return fileName
+            file_name = "%s_%s_%s.xlsx" % (dataUtil.CurrentDateStr,
+                                           current_user.id,
+                                           operate_type)
+        return file_name
 
+    @staticmethod
     def get_true_str(self, one):
         try:
             one = str(one)
@@ -584,49 +575,46 @@ class Search(object):
             pass
         return one
 
-    def down_load_excel(self, operType):
-        data = self.get_data(operType)
+    def down_load_excel(self, operate_type):
+        data = self.get_data(operate_type)
         _Excel = Excel(AppQueue.GetApp())
         _Excel.open()
-        fileName = self.get_file_name(operType)
-        _fileName = self.__get_file(fileName)
-        _Excel.WriteDataToExcelNull(data, fileName)
+        file_name = self.get_file_name(operate_type)
+        _fileName = self.__get_file(file_name)
+        _Excel.WriteDataToExcelNull(data, file_name)
         _Excel.save(_fileName)
         _Excel.close()
-        return dataUtil.ResOkJson("%s" % fileName)
+        return dataUtil.ResOkJson("%s" % file_name)
 
-    def down_load_pdf(self, operType):
-        self.down_load_excel(operType)
-        fileName = self.get_file_name(operType)
-        ExcelToPdf().Main([self.__get_file(fileName)])
-        self.DeletFile(fileName)
-        fileName = fileName.replace(".xlsx", ".pdf")
-        return dataUtil.ResOkJson("%s" % fileName)
+    def down_load_pdf(self, operate_type):
+        self.down_load_excel(operate_type)
+        file_name = self.get_file_name(operate_type)
+        ExcelToPdf().Main([self.__get_file(file_name)])
+        self.delete_file(file_name)
+        file_name = file_name.replace(".xlsx", ".pdf")
+        return dataUtil.ResOkJson("%s" % file_name)
 
-    def DwonOk(self, operType, fileName):
-        last = fileName.split(".")[1]
-        _fileName = self.__get_file(fileName)
+    def down_ok(self, operate_type, file_name):
+        last = file_name.split(".")[1]
+        _fileName = self.__get_file(file_name)
         _fileName = _fileName.split(".")[0] + "." + last
-        _name = self.get_file_name(operType, True).split(".")[0] + "." + last
+        _name = self.get_file_name(operate_type, True).split(".")[0] + "." + last
         response = make_response(send_file(_fileName))
         response.headers["content_type"] = "application/octet-stream"
         response.headers["Content-Disposition"] = "attachment; filename=%s;" % _name.encode("utf-8")
         return response
 
-    def DeletFile(self, fileName):
-        fileName = self.__get_file(fileName)
-        print fileName
+    def delete_file(self, file_name):
+        file_name = self.__get_file(file_name)
         try:
-            os.remove(fileName)
+            os.remove(file_name)
             return dataUtil.ResOkJson("ok")
         except:
-            return dataUtil.ResErrorJson("移除文件失败:%s" % fileName)
+            return dataUtil.ResErrorJson("移除文件失败:%s" % file_name)
 
-    def DwonLoad(self):
+    def download(self):
         self.ReqData = request.form.to_dict()
-        operType = self.ReqData.get("operType")
-        fileType = self.ReqData.get("fileType")
-        return getattr(self, "down_load_%s" % fileType.lower())(operType)
+        return getattr(self, "down_load_%s" % self.ReqData.get("fileType").lower())(self.ReqData.get("operType"))
 
 
 _searchUtil = Search()

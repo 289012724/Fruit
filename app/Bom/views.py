@@ -13,13 +13,13 @@ from ..common import _dataBaseUtil    as dataUtil
 
 @Bom.route("/search/<string:operType>", methods=['GET', 'POST'])
 def search(operType):
-    data = _searchUtil.Main(operType)
+    data = _searchUtil.main(operType)
     return jsonify(data)
 
 
 @Bom.route("/load_all/<string:operType>", methods=['GET', 'POST'])
 def load_all(operType):
-    data = _searchUtil.LoadInitData(operType)
+    data = _searchUtil.load_init_data(operType)
     return jsonify(data)
 
 
@@ -36,14 +36,14 @@ def load_datagrid(operType):
 
 @Bom.route("/download", methods=['GET', 'POST'])
 def down_load():
-    return _searchUtil.DwonLoad()
+    return _searchUtil.download()
 
 
 @Bom.route("/download_ok/<string:operType>/<string:name>", methods=['GET', 'POST'])
 def down_load_ok(operType, name):
-    return _searchUtil.DwonOk(operType, name)
+    return _searchUtil.down_ok(operType, name)
 
 
 @Bom.route("/download_delete/<string:fileName>", methods=['GET', 'POST'])
 def down_load_delete(fileName):
-    return _searchUtil.DeletFile(fileName)
+    return _searchUtil.delete_file(fileName)

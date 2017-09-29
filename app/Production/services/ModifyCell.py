@@ -206,9 +206,9 @@ class ModifyCell(object):
         return _dataBaseUtil.ResErrorJson(u"获取数据失败,请刷新页面")
 
     def _adjust_bill(self, current_user, current_date, old_user, old_date):
-        if _BillService.UpdateAllByTotal(current_user, current_date, old_user, old_date):
+        if _BillService.update_all_by_total(current_user, current_date, old_user, old_date):
             return self._get_model_info()
-        self.error = _dataBaseUtil.ResErrorJson(_BillService.GetError())
+        self.error = _dataBaseUtil.ResErrorJson(_BillService.get_error())
 
     def _base_update(self, _ses, method):
         """

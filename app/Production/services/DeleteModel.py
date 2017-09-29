@@ -46,7 +46,7 @@ class DeleteModel(object):
     @staticmethod
     def get_bill(self, date, user_id):
         state, model = dataUtil.getDataBase("bill", 'Finance').get(customer_id=user_id,
-                                                                   date=_BillService.GetBillDate(date))
+                                                                   date=_BillService.get_bill_date(date))
         if state and model:
             return model[0]
 

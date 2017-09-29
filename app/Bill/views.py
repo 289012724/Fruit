@@ -13,7 +13,7 @@ from ..common import _dataBaseUtil    as dataUtil
 
 @Bill.route("/search/<string:operType>", methods=['GET', 'POST'])
 def search(operType):
-    data = _searchUtil.Main(operType)
+    data = _searchUtil.main(operType)
     return jsonify(data)
 
 
@@ -46,17 +46,17 @@ def user_option(operType):
 
 @Bill.route("/download", methods=['GET', 'POST'])
 def down_load():
-    return _searchUtil.DwonLoad()
+    return _searchUtil.download()
 
 
 @Bill.route("/download_ok/<string:operType>/<string:name>/<string:dwname>", methods=['GET', 'POST'])
 def down_load_ok(operType, name, dwname):
-    return _searchUtil.DwonOk(operType, name, dwname)
+    return _searchUtil.down_ok(operType, name, dwname)
 
 
 @Bill.route("/download_delete/<string:fileName>", methods=['GET', 'POST'])
 def down_load_delete(fileName):
-    return _searchUtil.DeletFile(fileName)
+    return _searchUtil.delete_file(fileName)
 
 
 @Bill.route("/prev_date", methods=['GET', 'POST'])

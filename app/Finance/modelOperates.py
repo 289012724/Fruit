@@ -98,20 +98,21 @@ class BillOperate(BaseOperate):
             _row.append((cell, data))
         return _row
 
-    def GetBillDate(self, dateFrom):
-        date = dateFrom.split("-")
+    @staticmethod
+    def get_bill_date(self, date_from):
+        date = date_from.split("-")
         date[-1] = "01"
         date = "-".join(date)
         return date
 
-    def GetPrevMoney(self, customer_id, dateFrom):
+    def get_prev_money(self, customer_id, dateFrom):
         """
         @attention: 获取该用户上次预留下来的预付款
         @param customer_id:用户id号
         @param dateFrom: 用户选择的开始月份时间 
         """
         dateFrom = "%s" % dateFrom
-        dateFrom = self.GetBillDate(dateFrom)
+        dateFrom = self.get_bill_date(dateFrom)
         _query = self.Model.query
         _query = _query.filter(self.Model.customer_id == customer_id,
                                self.Model.date < dateFrom)
@@ -121,12 +122,12 @@ class BillOperate(BaseOperate):
             level_money = sum([model.level_money for model in models] or [0])
         return level_money
 
-    def GetCurrentBillMoney(self, customer_id, dateFrom):
+    def get_current_bill_money(self, customer_id, dateFrom):
         """
         @attention: 获取用户到目前为止的结余信息
         """
-        date = self.GetBillDate(dateFrom)
-        _prev = self.GetPrevMoney(customer_id, dateFrom)
+        date = self.get_bill_date(dateFrom)
+        _prev = self.get_prev_money(customer_id, dateFrom)
         _query = self.Model.query.filter(self.Model.customer_id == customer_id)
         _query = _query.filter(self.Model.date == date)
         model = _query.all()
@@ -136,7 +137,7 @@ class BillOperate(BaseOperate):
             data = None
         return data
 
-    def GetLast12Model(self, customer_id):
+    def get_last12_model(self, customer_id):
         """
         @attention: 获取该用户最近的12笔账单
         """
@@ -145,7 +146,7 @@ class BillOperate(BaseOperate):
         model = _query.all()
         return model
 
-    def GetPreEndDate(self, customer_id):
+    def get_pre_end_date(self, customer_id):
         """
         @attention: 获取用户上一次生成对账单的日期
         @param customer_id:用户id号
@@ -157,7 +158,7 @@ class BillOperate(BaseOperate):
         _model = _query.all()
         return _model
 
-    def GetBillAllMoney(self, bill_id):
+    def get_bill_all_money(self, bill_id):
         model = self.get(id=bill_id)[-1]
         model = model[0]
         rebund = model.rebund.all()
@@ -167,7 +168,7 @@ class BillOperate(BaseOperate):
         total = sum([cell.money_price for cell in _ok] or [0])
         return total
 
-    def UpdateBill(self, bill_id, total_money=None):
+    def update_bill(self, bill_id, total_money=None):
         """
         @attention: 自动计算本月差额值
         @param bill_id: 账单编号
@@ -175,20 +176,20 @@ class BillOperate(BaseOperate):
         model = self.get(id=int(bill_id))[-1]
         model = model[0]
         model.total_money = total_money or model.total_money
-        model.next_money = self.GetBillAllMoney(bill_id)
+        model.next_money = self.get_bill_all_money(bill_id)
         model.level_money = model.total_money - model.next_money
         self.ModelList = model
         return self.update()
 
-    def UpdateBillNew(self, session, bill_id, total_money=None):
+    def update_bill_new(self, session, bill_id, total_money=None):
         model = self.get(id=int(bill_id))[-1]
         model = model[0]
         model.total_money = total_money or model.total_money
-        model.next_money = self.GetBillAllMoney(bill_id)
+        model.next_money = self.get_bill_all_money(bill_id)
         model.level_money = model.total_money - model.next_money
         session.add(model)
 
-    def UpdateByRebund(self, session, bill_id, snap):
+    def update_by_rebund(self, session, bill_id, snap):
         """
         @attention: 更新用户当月的还款数据
         """
@@ -198,7 +199,7 @@ class BillOperate(BaseOperate):
         model.level_money = model.total_money - model.next_money
         session.add(model)
 
-    def UpdateByTotal(self, session, bill_id, snap):
+    def update_by_total(self, session, bill_id, snap):
         """
         @attention: 更新当月的账单信息
         """
@@ -208,7 +209,7 @@ class BillOperate(BaseOperate):
         model.level_money = model.total_money - model.next_money
         session.add(model)
 
-    def GetLastNotFillBill(self, customer_id):
+    def get_last_not_fill_bill(self, customer_id):
         """
         @attention: 获取未生成过对账单的账单数据
         """
@@ -217,7 +218,7 @@ class BillOperate(BaseOperate):
                                    model.has_filled == 0)
         return query.all() or []
 
-    def ChecekDeleteState(self, customer_id, bill_name):
+    def check_delete_state(self, customer_id, bill_name):
         state, model = self.get(customer_id=customer_id, tickets=bill_name)
         if state and model:
             model = model[0]

@@ -18,7 +18,8 @@ class BillService(object):
     @attention:  处理账单相关的创建更新和修改
     """
 
-    def GetBillDate(self, date):
+    @staticmethod
+    def get_bill_date(self, date):
         """
         @attention: 生产单的唯一标记号
         @param date: 时间节点
@@ -32,16 +33,16 @@ class BillService(object):
         date = "-".join(date)
         return date
 
-    def HasBill(self, customer_id, date):
+    def has_bill(self, customer_id, date):
         """
         @attention: 检测是否存在对应的账单信息
         """
-        _oper = _getOper("bill")
-        date = self.GetBillDate(date)
-        state, model = _oper.get(customer_id=customer_id, date=date)
+        date = self.get_bill_date(date)
+        state, model = _getOper("bill").get(customer_id=customer_id, date=date)
         if state and model:
             return True
 
+    @staticmethod
     def __new_bill(self, kwargs):
         date = kwargs.get("date")
         total_money = kwargs.get("total_money") or 0
@@ -56,7 +57,7 @@ class BillService(object):
         bill.has_filled = has_filled
         return bill
 
-    def AddNew(self, _ses, **kwargs):
+    def add_new(self, _ses, **kwargs):
         """
         @attention: 向数据库中添加新的账单信息
         """
@@ -68,14 +69,15 @@ class BillService(object):
             print "输入的参数有误", e
             return False
 
-    def UpdateModel(self, _ses, date, money_price):
-        _oper = _getOper("bill")
-        date = self.GetBillDate(date)
-        state, model = _oper.get(date == date)
+    def update_model(self, _ses, date, money_price):
+        operate = _getOper("bill")
+        date = self.get_bill_date(date)
+        state, model = operate.get(date == date)
         if state and model:
             self.UpdateByRebund(_ses, model[0].id, money_price)
             return True
 
+    @staticmethod
     def get_sell_money(self, sell):
         """
         @attention: 获取销售的付款信息
@@ -87,23 +89,26 @@ class BillService(object):
         print state, model
         return 0
 
+    @staticmethod
     def get_roll_money(self, roll):
         """
         @attention: 获取退款中的付款信息
         """
-        _oper = dataUtil.getDataBase("money", "Production")
-        money = dataUtil.getModel(_oper, id=roll.money_id)[0]
+        operate = dataUtil.getDataBase("money", "Production")
+        money = dataUtil.getModel(operate, id=roll.money_id)[0]
         return money.price
 
-    def __get_date_filter(self, _oper, start, end):
-        model = _oper.model
+    @staticmethod
+    def __get_date_filter(self, operate, start, end):
+        model = operate.model
         query = model.query
         query = query.filter(model.date >= start, model.date < end)
         return query
 
+    @staticmethod
     def __get_bill_date(self, bill):
-        oriDate = bill.date.strftime(DateFormat)
-        starts = oriDate.split("-")
+        ori_date = bill.date.strftime(DateFormat)
+        starts = ori_date.split("-")
         year, moth, date = [int(c) for c in starts]
         if moth == 12:
             year += 1
@@ -111,7 +116,7 @@ class BillService(object):
         else:
             moth += 1
         end = "%s-%s-%s" % (year, moth, date)
-        return oriDate, end
+        return ori_date, end
 
     def get_back_total(self, bill):
         """
@@ -120,16 +125,15 @@ class BillService(object):
         """
         start, end = self.__get_bill_date(bill)
         customer_id = bill.customer_id
-        _oper = dataUtil.getDataBase("rollback", "Production")
-        query = self.__get_date_filter(_oper, start, end)
-        query = query.filter(_oper.model.customer_id == customer_id)
+        operate = dataUtil.getDataBase("rollback", "Production")
+        query = self.__get_date_filter(operate, start, end)
+        query = query.filter(operate.model.customer_id == customer_id)
         models = query.all()
-        rmoney = [self.get_roll_money(model) for model in models] or [0]
-        rmoney = sum(rmoney)
+        r_money = [self.get_roll_money(model) for model in models] or [0]
+        r_money = sum(r_money)
         _price = [model.sell.price * model.number for model in models] or [0]
         _price = sum(_price)
-        backData = -(rmoney + _price)
-        return backData
+        return -(r_money + _price)
 
     def get_sell_total(self, bill):
         """
@@ -137,15 +141,14 @@ class BillService(object):
         """
         start, end = self.__get_bill_date(bill)
         customer_id = bill.customer_id
-        _oper = dataUtil.getDataBase("sell", "Production")
-        query = self.__get_date_filter(_oper, start, end)
-        query = query.filter(_oper.model.customer_id == customer_id)
+        operate = dataUtil.getDataBase("sell", "Production")
+        query = self.__get_date_filter(operate, start, end)
+        query = query.filter(operate.model.customer_id == customer_id)
         models = query.all()
-        rmoney = [self.get_sell_money(model) for model in models] or [0]
-        rmoney = sum(rmoney)
+        r_money = [self.get_sell_money(model) for model in models] or [0]
+        r_money = sum(r_money)
         _price = [model.price * model.number for model in models] or [0]
-        _price = sum(_price)
-        return _price - rmoney
+        return sum(_price) - r_money
 
     def _update_bill_total(self, bill):
         """
@@ -158,16 +161,17 @@ class BillService(object):
         bill.level_money = bill.total_money - bill.next_money
         return True
 
+    @staticmethod
     def _update_bill_next(self, bill):
-        bill.next_money = _billOpt.GetBillAllMoney(bill.id)
+        bill.next_money = _billOpt.get_bill_all_money(bill.id)
         bill.level_money = bill.total_money - bill.next_money
         return True
 
     def _is_update(self, bill):
         date = bill.date.strftime(DateFormat)
-        dateN = dataUtil.CurrentDateStr
-        date1 = self.GetBillDate(date)
-        date2 = self.GetBillDate(dateN)
+        date_current = dataUtil.CurrentDateStr
+        date1 = self.get_bill_date(date)
+        date2 = self.get_bill_date(date_current)
         if bill.has_filled != 0:
             return True
 
@@ -177,7 +181,7 @@ class BillService(object):
             return False
         return True
 
-    def UpdateBillTotal(self, bill):
+    def update_bill_total(self, bill):
         """
         @attention: update the has filled bill
         """
@@ -187,23 +191,24 @@ class BillService(object):
         if self._is_update(bill):
             return self._update_bill_total(bill)
 
-    def UpdateOneBill(self, _ses, bill_o, bill_n):
-        if bill_n and self.UpdateBillTotal(bill_n):
+    def update_one_bill(self, _ses, bill_o, bill_n):
+        if bill_n and self.update_bill_total(bill_n):
             _ses.add(bill_n)
-        if bill_o and self.UpdateBillTotal(bill_o):
+        if bill_o and self.update_bill_total(bill_o):
             _ses.add(bill_o)
 
-    def UpdateTwoBill(self, _ses, bill_o, bill_n):
+    def update_two_bill(self, _ses, bill_o, bill_n):
         if bill_n.id != bill_o.id:
-            if self.UpdateBillTotal(bill_o):
+            if self.update_bill_total(bill_o):
                 _ses.add(bill_o)
-            if self.UpdateBillTotal(bill_n):
+            if self.update_bill_total(bill_n):
                 _ses.add(bill_n)
         else:
-            if self.UpdateBillTotal(bill_o):
+            if self.update_bill_total(bill_o):
                 _ses.add(bill_o)
 
-    def GetBill(self, customer_id, date):
+    @staticmethod
+    def get_bill(self, customer_id, date):
         model = _billOpt.model
         query = model.query.filter(model.customer_id == customer_id,
                                    model.date == date)
@@ -211,7 +216,7 @@ class BillService(object):
         if models:
             return models[0]
 
-    def _SetError(self, bill_o, bill_n):
+    def _set_error(self, bill_o, bill_n):
         self.error = ""
         if bill_o and bill_n and bill_n.id == bill_o.id:
             user = _user.get(id=bill_o.customer_id)[-1][0]
@@ -224,75 +229,78 @@ class BillService(object):
                 user = _user.get(id=bill_n.customer_id)[-1][0]
                 self.error += u"请手动更新%s,%s的对账单" % (user.username, bill_n.date.strftime("%Y-%m-%d"))
 
-    def UpdateAllBill(self, curent_user, current_date, old_user, old_date):
+    def update_all_bill(self, current_user, current_date, old_user, old_date):
         _ses = _billOpt.Session
-        current_date = self.GetBillDate(current_date)
-        old_date = self.GetBillDate(old_date)
-        bill_o = self.GetBill(old_user, old_date)
-        bill_n = self.GetBill(curent_user, current_date)
-        self._SetError(bill_o, bill_n)
+        current_date = self.get_bill_date(current_date)
+        old_date = self.get_bill_date(old_date)
+        bill_o = self.get_bill(old_user, old_date)
+        bill_n = self.get_bill(current_user, current_date)
+        self._set_error(bill_o, bill_n)
         if bill_n and bill_o:
-            self.UpdateTwoBill(_ses, bill_o, bill_n)
+            self.update_two_bill(_ses, bill_o, bill_n)
         else:
-            self.UpdateOneBill(_ses, bill_o, bill_n)
+            self.update_one_bill(_ses, bill_o, bill_n)
         try:
             _ses.commit()
             return True
         except Exception, e:
             print e
 
-    def UpdateAllByTotal(self, curent_user, current_date, old_user, old_date):
+    def update_all_by_total(self, current_user, current_date, old_user, old_date):
         """
         @attention: 因销售状态更改导致的修正
         """
         self.idCode = 1
-        return self.UpdateAllBill(curent_user, current_date, old_user, old_date)
+        return self.update_all_bill(current_user, current_date, old_user, old_date)
 
-    def UpdateAllByNext(self, curent_user, current_date, old_user, old_date):
+    def update_all_by_next(self, current_user, current_date, old_user, old_date):
         """
         @attention: 因还款导致的修正
         """
         self.idCode = 2
-        return self.UpdateAllBill(curent_user, current_date, old_user, old_date)
+        return self.update_all_bill(current_user, current_date, old_user, old_date)
 
-    def GetError(self):
+    def get_error(self):
         if hasattr(self, "error"):
             return self.error
         return ""
 
-    def GetBillError(self, bill):
+    @staticmethod
+    def get_bill_error(self, bill):
         user = _user.get(id=bill.customer_id)[-1][0]
         date = bill.date.strftime("%Y-%m-%d")
         error = "计算用户:%s  日期:%s 的账单失败,错误原因:" % (user, date)
         return error
 
-    def UpdateAllOneBill(self, bill):
+    def update_all_one_bill(self, bill):
         sell = self.get_sell_total(bill)
         back = self.get_back_total(bill)
         total_money = sell + back
         bill.total_money = total_money
-        bill.next_money = _billOpt.GetBillAllMoney(bill.id)
+        bill.next_money = _billOpt.get_bill_all_money(bill.id)
         bill.level_money = bill.total_money - bill.next_money
         _billOpt.ModelList = bill
         return _billOpt.update()
 
-    def GetToUpdateBill(self, start, end, userId):
+    @staticmethod
+    def get_to_update_bill(self, start, end, uid):
         model = _billOpt.model
         query = model.query.filter(model.date >= start)
         if end:
             query = query.filter(model.date <= end)
-        if userId:
-            query = query.fitler(model.customer_id == userId)
+        if uid:
+            query = query.fitler(model.customer_id == uid)
         return query.all()
 
-    def UpdateBillAll(self, start, end=None, userId=None):
+    def update_bill_all(self, start, end=None, uid=None):
         errors = []
-        if end: end = self.GetBillDate(end)
-        models = self.GetToUpdateBill(start, end, userId)
+        if end:
+            end = self.get_bill_date(end)
+        models = self.get_to_update_bill(start, end, uid)
         for bill in models:
-            start, model = self.UpdateAllOneBill(bill)
+            start, model = self.update_all_one_bill(bill)
             if not (start and model):
-                _err = self.GetBillError(bill)
+                _err = self.get_bill_error(bill)
                 _err += model
                 errors.append(_err)
         return errors

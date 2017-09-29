@@ -8,12 +8,11 @@
 @file: __init__.py.py
 """
 import os
-from flask import Flask, render_template, \
-    url_for, request, redirect, jsonify
+from flask import Flask
 from config import config
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, current_user
+from flask_login import LoginManager
 
 database = SQLAlchemy()
 bootstrap = Bootstrap()
@@ -27,11 +26,11 @@ def create_app(config_name):
     database.init_app(app)
     load_manager.init_app(app)
     load_manager.login_view = 'User.login'
-    from .User import User        as User_blueprint
-    from .Production import Production  as Pro_blueprint
-    from .Finance import Finance     as Finance_blueprint
-    from .Bom import Bom         as Bom_blueprint
-    from .Bill import Bill        as Bill_blueprint
+    from .User import User as User_blueprint
+    from .Production import Production as Pro_blueprint
+    from .Finance import Finance as Finance_blueprint
+    from .Bom import Bom as Bom_blueprint
+    from .Bill import Bill as Bill_blueprint
     app.register_blueprint(User_blueprint)
     app.register_blueprint(Pro_blueprint)
     app.register_blueprint(Finance_blueprint)

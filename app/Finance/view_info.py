@@ -12,19 +12,19 @@ from ..common import json_return
 import page_config
 
 
-def get_operTypeIndex(operType):
+def get_operate_type_index(operType):
     return ["rebund", 'writeoff', 'rebate'].index(operType)
 
 
 @Finance.route('/load_datagrid/<string:operType>', methods=['GET', 'POST'])
-def load_datagrid(operType):
-    return render_template('Finance/table_datagrid.html', operType=operType, operTypeIndex=get_operTypeIndex(operType))
+def load_data_grid(operType):
+    return render_template('Finance/table_datagrid.html', operType=operType, operTypeIndex=get_operate_type_index(operType))
 
 
 @Finance.route("/load_all/<string:operType>", methods=['POST', 'GET'])
 @json_return
 def load_all(operType):
-    return _initPageUtil.GetAllData(operType)
+    return _initPageUtil.get_all_data(operType)
 
 
 @Finance.route("/table_config/<string:operType>", methods=['POST', 'GET'])
@@ -36,10 +36,10 @@ def table_config(operType):
 @Finance.route("/get_bill_choices/<string:username>", methods=['POST', 'GET'])
 @json_return
 def get_bill_choices(username):
-    return _initPageUtil.GetBillChoices(username)
+    return _initPageUtil.get_bill_choices(username)
 
 
 @Finance.route("/get_customer_choices/", methods=['POST', 'GET'])
 @json_return
 def get_customer_choices():
-    return _initPageUtil.GetCustomerChoices()
+    return _initPageUtil.get_customer_choices()

@@ -18,19 +18,19 @@ class ZipDownFile(object):
         object.__init__(self, *args, **kwargs)
         self.files = []
 
-    def zipFile(self, fileName):
-        destZip = zipfile.ZipFile(self.dirPath, "w")
-        for eachfile in self.files:
-            print "Zip file %s...to %s" % (eachfile, fileName)
-            name = os.path.split(eachfile)[-1]
-            destZip.write(eachfile, name)
-        destZip.close()
+    def zip(self, file_name):
+        destination = zipfile.ZipFile(self.dirPath, "w")
+        for each in self.files:
+            print "Zip file %s...to %s" % (each, file_name)
+            name = os.path.split(each)[-1]
+            destination.write(each, name)
+        destination.close()
         print "Zip folder succeed!"
 
-    def _filter(self, fileName):
+    def _filter(self, file_name):
         return True
 
-    def walkFile(self):
+    def walk_file(self):
         parent = os.path.dirname(self.dirPath)
         print parent
         for root, dir, files in os.walk(parent, 0):
@@ -40,29 +40,20 @@ class ZipDownFile(object):
                 if self._filter(_path) and not _file.endswith(".zip"):
                     self.files.append(_path)
 
-    def Main_old(self, fileName, dirPath=None):
-        if dirPath is None: dirPath = down_load
-        dirPath = os.path.join(dirPath, "%s" % fileName)
-        if not os.path.exists(dirPath):
-            open(dirPath, "w").close()
-        self.dirPath = dirPath
-        self.walkFile()
-        self.zipFile(fileName)
-        return self.dirPath
-
-    def Main(self, fileName, dirPath=None):
-        if dirPath is None: dirPath = down_load
-        dirPath = os.path.join(dirPath, "%s" % fileName)
-        self.dirPath = dirPath
-        self.walkFile()
+    def main(self, file_name, direction=None):
+        if direction is None:
+            direction = down_load
+        direction = os.path.join(direction, "%s" % file_name)
+        self.dirPath = direction
+        self.walk_file()
         self.Move()
         for name in self.files:
             path = os.path.join(down_load, name)
             if os.path.exists(path):
                 os.remove(path)
-            #         self.zipFile(fileName)
+                #         self.zipFile(fileName)
         return self.dirPath
 
 
 if __name__ == '__main__':
-    print ZipDownFile().Main(u"2份对账单.zip")
+    print ZipDownFile().main(u"2份对账单.zip")
