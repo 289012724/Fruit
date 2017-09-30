@@ -137,20 +137,20 @@ def DepartmentId(department_name):
 
 @User.route("department_choice")
 def DepartmentChocie():
-    model = _departOper.model
+    model = _departOper.Model
     models = model.query.filter(~model.name.in_([u"客户", u"供应商"])).all()
     return [(int(_m.id), _m.name) for _m in models]
 
 
 @User.route("department_choice_customer")
 def DepartmentChoiceCustomer():
-    model = _departOper.model
+    model = _departOper.Model
     models = model.query.filter(model.name.in_([u"客户"])).all()
     return [(int(_m.id), _m.name) for _m in models]
 
 
 @User.route("department_choice_supportor")
 def DepartmentChoiceSupportor():
-    model = _departOper.model
+    model = _departOper.Model
     models = model.query.filter(model.name.in_([u"供应商"])).all()
     return [(int(_m.id), _m.name) for _m in models]

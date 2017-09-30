@@ -75,7 +75,7 @@ class InitPage(object):
         return True, login_form, None
 
     @staticmethod
-    def _add_department(self, form):
+    def _add_department(form):
         """
         @attention: 添加部门
         """
@@ -90,7 +90,7 @@ class InitPage(object):
         return u"添加部门失败", None
 
     @staticmethod
-    def _add_user(self, form):
+    def _add_user(form):
         """
         @attention: 添加用户
         """
@@ -116,7 +116,7 @@ class InitPage(object):
         return 1, u'成功', models[0]
 
     @staticmethod
-    def get_department_choice(self, role_type):
+    def get_department_choice(role_type):
         """
         @attention: 获取部门选项
         @param role_type: 操作类型 
@@ -307,7 +307,7 @@ class InitPage(object):
         return self._modify_department()
 
     @staticmethod
-    def get_supporter_name(self, department):
+    def get_supporter_name(department):
         """
         @attention: get all the department usernames
         @param department: the user flag 0 worker,1 customer,2 supporter
@@ -324,6 +324,7 @@ class InitPage(object):
 
     def user_search(self, role_type):
         role_type = role_type.lower()
+        print(role_type)
         if role_type == "department":
             form = _getForm("DepartmentSearchForm")
         else:
@@ -333,7 +334,7 @@ class InitPage(object):
                 choices = [(str(cell[0]), cell[1]) for cell in choices]
                 choices.insert(0, ("", ""))
 
-            if role_type == "customer":
+            if role_type == "custemer":
                 ids = dataUtil.GetDataByUrl("DepartmentId", blueprint)(u"客户")
                 choices = [(str(ids), u"客户")]
 
@@ -358,14 +359,14 @@ class InitPage(object):
 
         if self.check_form(form):
             if role_type == "department":
-                model = _departOperate.model
+                model = _departOperate.Model
                 query = model.query
                 query = _fun(query, model, form, "name", False)
                 query = _fun(query, model, form, "description", False)
                 models = query.all()
                 state, model = _departOperate.get_data(models, True)
             else:
-                model = _userOperate.model
+                model = _userOperate.Model
                 query = _fun(model.query, model, form, "username", False)
                 if role_type != "user" or form.data.get("department_id"):
                     query = _fun(query, model, form, "department_id")
@@ -379,7 +380,7 @@ class InitPage(object):
         return False, form
 
     @staticmethod
-    def _sort(self, one, two):
+    def _sort(one, two):
         _1 = int(one['id'])
         _2 = int(two['id'])
         if _1 > _2:
@@ -418,7 +419,7 @@ class InitPage(object):
         return data
 
     @staticmethod
-    def check_license(self, basedir):
+    def check_license(basedir):
         state, _str = BaseControl.GetLincece(basedir)
         return state, _str
 

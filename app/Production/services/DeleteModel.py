@@ -39,12 +39,12 @@ class DeleteModel(object):
         [self.delete_sells(model, _session) for model in sells]
 
     @staticmethod
-    def get_money_model(self, uid):
+    def get_money_model(uid):
         _money = _getOperate("money").get(id=uid)[-1]
         return _money[0]
 
     @staticmethod
-    def get_bill(self, date, user_id):
+    def get_bill(date, user_id):
         state, model = dataUtil.getDataBase("bill", 'Finance').get(customer_id=user_id,
                                                                    date=_BillService.get_bill_date(date))
         if state and model:
@@ -123,7 +123,7 @@ class DeleteModel(object):
         return dataUtil.ResOk(u"删除数据成功")
 
     @staticmethod
-    def __check_sell(self, model):
+    def __check_sell( model):
         """
         @attention: 检测是否存在退货信息
         """
@@ -133,7 +133,7 @@ class DeleteModel(object):
         return dataUtil.ResOk("ok")
 
     @staticmethod
-    def __check_stock(self, model):
+    def __check_stock(model):
         """
         @attention: 检测是有转出或则销售信息
         """
@@ -165,7 +165,7 @@ class DeleteModel(object):
             return dataUtil.ResOk("ok")
 
     @staticmethod
-    def __check_stock_id(self, user_id):
+    def __check_stock_id(user_id):
         """
         @attention: 检测是否存在供应商提供的入库商品信息
         @param user_id: 供应商ID号 
@@ -173,7 +173,7 @@ class DeleteModel(object):
         return dataUtil.getModel(_getOperate('stock'), support_id=user_id)
 
     @staticmethod
-    def __check_operate_id(self, user_id, role_type):
+    def __check_operate_id(user_id, role_type):
         """
         @attention: 检测是否存在某客户的相关数据
         @param user_id: 用户ID号

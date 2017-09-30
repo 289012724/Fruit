@@ -84,7 +84,7 @@ class ModifyCell(object):
             self.error = _dataBaseUtil.ResErrorJson(u"更新价格输入参数有误%s" % model)
 
     @staticmethod
-    def get_money_model(self, uid):
+    def get_money_model(uid):
         _money = _getOperate("money")
         _moneyModel = _dataBaseUtil.getModel(_money, id=uid)
         return _moneyModel[0]
@@ -116,11 +116,11 @@ class ModifyCell(object):
             self.__add_new_money(session, operate_type, sell_id)
 
     @staticmethod
-    def is_ok(self, state, model=True):
+    def is_ok(state, model=True):
         return state and model
 
     @staticmethod
-    def update_stock(self, stock):
+    def update_stock(stock):
         _stock = _getOperate("stock")
         stock_n = _stock.GetAbsTotal(stock.id)
         if stock_n == 0:
@@ -189,7 +189,7 @@ class ModifyCell(object):
         return self._update_back(operate)
 
     @staticmethod
-    def get_model_date(self, model):
+    def get_model_date(model):
         """
         @attention:  获取模型日期时间
         """
@@ -238,7 +238,7 @@ class ModifyCell(object):
         return self.error
 
     @staticmethod
-    def get_user_name(self, uid):
+    def get_user_name(uid):
         return _dataBaseUtil.getDataBase("UserOperate", "User").get(id=uid)[-1][0]
 
     def check_sell_number(self, operate):

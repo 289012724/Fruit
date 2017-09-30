@@ -7,8 +7,8 @@
 from ...common import _dataBaseUtil as dataUtil
 
 _finance = "Finance"
-_getOper = dataUtil.GetPartial(_finance)
-_billOpt = _getOper("bill")
+_getOperate = dataUtil.GetPartial(_finance)
+_billOpt = _getOperate("bill")
 DateFormat = "%Y-%m-%d"
 _user = dataUtil.getDataBase("UserOperate", "User")
 
@@ -19,7 +19,7 @@ class BillService(object):
     """
 
     @staticmethod
-    def get_bill_date(self, date):
+    def get_bill_date(date):
         """
         @attention: 生产单的唯一标记号
         @param date: 时间节点
@@ -38,12 +38,12 @@ class BillService(object):
         @attention: 检测是否存在对应的账单信息
         """
         date = self.get_bill_date(date)
-        state, model = _getOper("bill").get(customer_id=customer_id, date=date)
+        state, model = _getOperate("bill").get(customer_id=customer_id, date=date)
         if state and model:
             return True
 
     @staticmethod
-    def __new_bill(self, kwargs):
+    def __new_bill(kwargs):
         date = kwargs.get("date")
         total_money = kwargs.get("total_money") or 0
         next_money = kwargs.get("next_money") or 0
@@ -51,7 +51,7 @@ class BillService(object):
         operator_id = kwargs.get("operator_id")
         customer_id = kwargs.get("customer_id")
         has_filled = kwargs.get("has_filled") or 0
-        bill = _getOper("bill").model()
+        bill = _getOperate("bill").Model()
         bill.Init((date, total_money, next_money, level_money,
                    customer_id, operator_id))
         bill.has_filled = has_filled
@@ -70,7 +70,7 @@ class BillService(object):
             return False
 
     def update_model(self, _ses, date, money_price):
-        operate = _getOper("bill")
+        operate = _getOperate("bill")
         date = self.get_bill_date(date)
         state, model = operate.get(date == date)
         if state and model:
@@ -78,7 +78,7 @@ class BillService(object):
             return True
 
     @staticmethod
-    def get_sell_money(self, sell):
+    def get_sell_money(sell):
         """
         @attention: 获取销售的付款信息
         """
@@ -90,7 +90,7 @@ class BillService(object):
         return 0
 
     @staticmethod
-    def get_roll_money(self, roll):
+    def get_roll_money(roll):
         """
         @attention: 获取退款中的付款信息
         """
@@ -99,14 +99,14 @@ class BillService(object):
         return money.price
 
     @staticmethod
-    def __get_date_filter(self, operate, start, end):
-        model = operate.model
+    def __get_date_filter(operate, start, end):
+        model = operate.Model
         query = model.query
         query = query.filter(model.date >= start, model.date < end)
         return query
 
     @staticmethod
-    def __get_bill_date(self, bill):
+    def __get_bill_date(bill):
         ori_date = bill.date.strftime(DateFormat)
         starts = ori_date.split("-")
         year, moth, date = [int(c) for c in starts]
@@ -127,7 +127,7 @@ class BillService(object):
         customer_id = bill.customer_id
         operate = dataUtil.getDataBase("rollback", "Production")
         query = self.__get_date_filter(operate, start, end)
-        query = query.filter(operate.model.customer_id == customer_id)
+        query = query.filter(operate.Model.customer_id == customer_id)
         models = query.all()
         r_money = [self.get_roll_money(model) for model in models] or [0]
         r_money = sum(r_money)
@@ -143,7 +143,7 @@ class BillService(object):
         customer_id = bill.customer_id
         operate = dataUtil.getDataBase("sell", "Production")
         query = self.__get_date_filter(operate, start, end)
-        query = query.filter(operate.model.customer_id == customer_id)
+        query = query.filter(operate.Model.customer_id == customer_id)
         models = query.all()
         r_money = [self.get_sell_money(model) for model in models] or [0]
         r_money = sum(r_money)
@@ -162,7 +162,7 @@ class BillService(object):
         return True
 
     @staticmethod
-    def _update_bill_next(self, bill):
+    def _update_bill_next(bill):
         bill.next_money = _billOpt.get_bill_all_money(bill.id)
         bill.level_money = bill.total_money - bill.next_money
         return True
@@ -208,8 +208,8 @@ class BillService(object):
                 _ses.add(bill_o)
 
     @staticmethod
-    def get_bill(self, customer_id, date):
-        model = _billOpt.model
+    def get_bill(customer_id, date):
+        model = _billOpt.Model
         query = model.query.filter(model.customer_id == customer_id,
                                    model.date == date)
         models = query.all()
@@ -266,7 +266,7 @@ class BillService(object):
         return ""
 
     @staticmethod
-    def get_bill_error(self, bill):
+    def get_bill_error(bill):
         user = _user.get(id=bill.customer_id)[-1][0]
         date = bill.date.strftime("%Y-%m-%d")
         error = "计算用户:%s  日期:%s 的账单失败,错误原因:" % (user, date)
@@ -283,8 +283,8 @@ class BillService(object):
         return _billOpt.update()
 
     @staticmethod
-    def get_to_update_bill(self, start, end, uid):
-        model = _billOpt.model
+    def get_to_update_bill(start, end, uid):
+        model = _billOpt.odel
         query = model.query.filter(model.date >= start)
         if end:
             query = query.filter(model.date <= end)

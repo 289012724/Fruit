@@ -11,7 +11,7 @@
 from .. import database as db
 
 
-class stock(db.model):
+class stock(db.Model):
     __tablename__ = 'fruit_stocks'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     date = db.Column(db.DateTime)
@@ -41,7 +41,7 @@ class stock(db.model):
         self.notice_a = arg
 
 
-class money(db.model):
+class money(db.Model):
     __tablename__ = 'fruit_moneys'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     money_type = db.Column(db.String(20))
@@ -57,7 +57,7 @@ class money(db.model):
         return "%r-%r-%r" % (self.id, self.money_type.encode('UTF-8'), self.price)
 
 
-class sell(db.model):
+class sell(db.Model):
     __tablename__ = 'fruit_sells'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     date = db.Column(db.DateTime)
@@ -84,7 +84,7 @@ class sell(db.model):
         self.notice_a = arg
 
 
-class roll_out(db.model):
+class roll_out(db.Model):
     __tablename__ = 'fruit_roll_outs'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     date = db.Column(db.DateTime)
@@ -105,7 +105,7 @@ class roll_out(db.model):
         self.operator_id, self.notice, self.notice_a = arg
 
 
-class roll_back(db.model):
+class roll_back(db.Model):
     __tablename__ = 'fruit_roll_backs'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     date = db.Column(db.DateTime)

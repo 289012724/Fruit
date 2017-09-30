@@ -302,7 +302,7 @@ def _get_modify_sell(uid):
 
 # stock
 def _get_modify_stock(uid):
-    form, date = _modifyPageUtil.get_stock_gage(uid)
+    form, date = _modifyPageUtil.get_stock_page(uid)
     return render_template('Production/stock.html', form=form, date=date)
 
 
@@ -354,8 +354,7 @@ def delete_production(operType):
 def search(operType):
     _id, data = _searchUtil.SearchModel(operType)
     if _id != 3:
-        jsonify(data)
-
+        return jsonify(data)
     data.operator_id.choices = [(current_user.id, current_user.username)]
     if current_user.username in ['admin', 'autitor']:
         choices = _dataUtil.GetDataByUrl("UserChocieAll", "User")()

@@ -6,7 +6,7 @@
 from .. import database as db
 
 
-class Rebund(db.model):
+class Rebund(db.Model):
     __tablename__ = 'fruit_bill_rebund'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     date = db.Column(db.DateTime)
@@ -23,7 +23,7 @@ class Rebund(db.model):
         self.money_price, self.customer_id, self.operator_id, self.bill_id, self.notice = arg
 
 
-class Rebate(db.model):
+class Rebate(db.Model):
     __tablename__ = 'fruit_bill_rebate'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     date = db.Column(db.DateTime)
@@ -40,7 +40,7 @@ class Rebate(db.model):
         self.operator_id, self.bill_id, self.description, self.notice = arg
 
 
-class WriteOff(db.model):
+class WriteOff(db.Model):
     __tablename__ = 'fruit_bill_writeoff'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     date = db.Column(db.DateTime)
@@ -62,7 +62,7 @@ class WriteOff(db.model):
 # 当还过一次款会更新账单记录中的本月结转信息
 # 在计算用户应该给的总账单的时候，根据结转信息计算
 # ===============================================================================
-class Bill(db.model):
+class Bill(db.Model):
     __tablename__ = 'fruit_bill_bill'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     date = db.Column(db.DateTime)

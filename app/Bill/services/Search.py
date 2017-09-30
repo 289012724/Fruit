@@ -104,7 +104,7 @@ class Search(object):
         return query
 
     @staticmethod
-    def get_sell_money(self, sell):
+    def get_sell_money(sell):
         """
         @attention: 获取销售的付款信息
         """
@@ -112,7 +112,7 @@ class Search(object):
         return money.price
 
     @staticmethod
-    def get_roll_money(self, roll):
+    def get_roll_money(roll):
         """
         @attention: 获取退款中的付款信息
         """
@@ -137,7 +137,7 @@ class Search(object):
         return _data
 
     @staticmethod
-    def sort(self, one, two):
+    def sort(one, two):
         if one.get("date") > two.get("date"):
             return 1
         elif one.get('date') == two.get("date"):
@@ -197,7 +197,7 @@ class Search(object):
         return getattr(self, operete_type)()
 
     @staticmethod
-    def get_page_config(self, operate_type):
+    def get_page_config(operate_type):
         config = page_table_configs.get(operate_type.lower())
         data = [(one.get("field"), one.get("title")) for one in config]
         column = [one[0] for one in data]
@@ -220,7 +220,7 @@ class Search(object):
         return _result
 
     @staticmethod
-    def __get_file(self, file_name):
+    def __get_file(file_name):
         path = current_app.config.get("DOWNLOAD_FILE")
         if not os.path.exists(path):
             os.mkdir(path)
@@ -240,7 +240,7 @@ class Search(object):
         return file_name
 
     @staticmethod
-    def get_true_str(self, one):
+    def get_true_str(one):
         try:
             one = str(one)
         except:
@@ -306,7 +306,7 @@ class Search(object):
             self._add_new(_ses, bill_date, total_money, next_money, customer_id)
 
     @staticmethod
-    def _get_total_data(self, data):
+    def _get_total_data(data):
         """
         @attention: 获取账单最后的合计项目
         @param data: 账单数据 
@@ -465,7 +465,7 @@ class Search(object):
         return jsonify(self.get_pdf_data(operate_type))
 
     @staticmethod
-    def _filter_execl(self, file_name):
+    def _filter_execl(file_name):
         state = ".xlsx" in file_name and "cstbill" not in file_name
         return state
 
@@ -474,7 +474,7 @@ class Search(object):
         return state
 
     @staticmethod
-    def _get_all_user(self, operate_type):
+    def _get_all_user(operate_type):
         if operate_type == 'cstbill':
             users = dataUtil.GetDataByUrl("CustomerChoice", "User")
         else:
@@ -483,7 +483,7 @@ class Search(object):
         return user_id
 
     @staticmethod
-    def get_log_file(self):
+    def get_log_file():
         path = current_app.config.get("DOWNLOAD_FILE")
         log = os.path.join(path, u"%s对账单错误日志.log" % current_user.username)
         fp = open(log, "w")
@@ -639,7 +639,7 @@ class Search(object):
         return date_from
 
     @staticmethod
-    def has_bill(self):
+    def has_bill():
         """
         @attention: 检测选择的开始时间是否已经计算过了账单,
         当用户已经还过款的时候，给予提示
@@ -647,7 +647,7 @@ class Search(object):
         return dataUtil.ResOkJson(u"日期有效")
 
     @staticmethod
-    def get_sub_cell(self, _model):
+    def get_sub_cell(_model):
         models = _model.all()
         return sum([cell.money_price for cell in models] or [0])
 
@@ -665,7 +665,7 @@ class Search(object):
         return 0
 
     @staticmethod
-    def get_prev_bill(self, user_id, date):
+    def get_prev_bill(user_id, date):
         """
         @attention: 获取上月账单余额数据
         """
@@ -673,7 +673,7 @@ class Search(object):
         return data
 
     @staticmethod
-    def get_bills_info(self, start, end, user_id=None):
+    def get_bills_info(start, end, user_id=None):
         """
         @attention:  获取账单信息
         @param date: 账单名 格式 2017-01-01
@@ -688,7 +688,7 @@ class Search(object):
         return model
 
     @staticmethod
-    def get_bill_date(self, date):
+    def get_bill_date(date):
         if date.count("-") == 2:
             date = _BillService.get_bill_date(date)
         else:
@@ -726,7 +726,7 @@ class Search(object):
         return data
 
     @staticmethod
-    def bill_to_dict(self, data):
+    def bill_to_dict(data):
         _dict = {}
         for cell in data:
             _dict[cell.get('customer_id')] = cell
@@ -776,7 +776,7 @@ class Search(object):
         return []
 
     @staticmethod
-    def write_error(self, error):
+    def write_error(error):
         down = current_app.config.get("DOWNLOAD_FILE")
         _log = "%s_calculate_bill.log" % (current_user.username)
         _file = os.path.join(down, _log)

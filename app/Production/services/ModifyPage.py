@@ -15,15 +15,16 @@ class ModifyPage(object):
     def __init__(self):
         object.__init__(self)
 
-    def GetCellData(self, operType, productionId):
+    @staticmethod
+    def get_cell_data(operate_type, uid):
         """
         @attention: 获取商品数据
-        @param operType:操作类型
-        @param productionId:产品编号  
+        @param operate_type:操作类型
+        @param uid:产品编号  
         """
-        _oper = _getOper(operType)
-        model = _oper.get(id=productionId)[-1]
-        _data = _oper.get_data(model, True)[-1]
+        operate = _getOper(operate_type)
+        model = operate.get(id=uid)[-1]
+        _data = operate.get_data(model, True)[-1]
         if not _data:
             return {}
 
@@ -40,8 +41,8 @@ class ModifyPage(object):
                 pass
         return _data
 
-    def GetStockPage(self, idx):
-        data = self.GetCellData("stock", idx)
+    def get_stock_page(self, uid):
+        data = self.get_cell_data("stock", uid)
         if data.has_key("unit"):
             data.pop("unit")
 
@@ -50,8 +51,9 @@ class ModifyPage(object):
         formUtil.setFormData(form, data)
         return form, date
 
-    def GetMoneyInfo(self, moneyid):
-        models = dataUtil.getModel(_getOper("money"), id=moneyid)
+    @staticmethod
+    def get_money_info(uid):
+        models = dataUtil.getModel(_getOper("money"), id=uid)
         total = 0
         types = u'现金'
         if models:
@@ -60,15 +62,15 @@ class ModifyPage(object):
                 types = model.money_type
         return total, types
 
-    def GetSellPage(self, productionId):
+    def get_sell_page(self, uid):
         form = _getForm("SellForm")
         money = _getForm("MoneyForm")
-        moneytype = [u"现金", u"支付宝", u"微信", u"转账", u"支票"]
-        money.money_type.choices = [(idx, cell) for idx, cell in enumerate(moneytype)]
-        _data = self.GetCellData("sell", productionId)
+        money_type = [u"现金", u"支付宝", u"微信", u"转账", u"支票"]
+        money.money_type.choices = [(idx, cell) for idx, cell in enumerate(money_type)]
+        _data = self.get_cell_data("sell", uid)
         date = _data['date']
-        _model = dataUtil.getModel(_getOper("sell"), id=productionId)[0]
-        total, types = self.GetMoneyInfo(_model.money_id)
+        _model = dataUtil.getModel(_getOper("sell"), id=uid)[0]
+        total, types = self.get_money_info(_model.money_id)
         money.money_type.data = types
         money.price.data = total
         _data.pop('date'), _data.pop('money_id')
@@ -78,15 +80,15 @@ class ModifyPage(object):
             _model.stock.name, _model.stock.id)
         return form, money, date, stock_name_and_id
 
-    def GetRollBackPage(self, productionId):
+    def get_roll_back_page(self, uid):
         form = _getForm("RollBack")
         money = _getForm("MoneyForm")
-        moneytype = [u"现金", u"支付宝", u"微信", u"转账", u"支票"]
-        money.money_type.choices = [(idx, cell) for idx, cell in enumerate(moneytype)]
-        _data = self.GetCellData("rollback", productionId)
+        money_type = [u"现金", u"支付宝", u"微信", u"转账", u"支票"]
+        money.money_type.choices = [(idx, cell) for idx, cell in enumerate(money_type)]
+        _data = self.get_cell_data("rollback", uid)
         date = _data['date']
-        _model = dataUtil.getModel(_getOper("rollback"), id=productionId)[0]
-        total, types = self.GetMoneyInfo(_model.money_id)
+        _model = dataUtil.getModel(_getOper("rollback"), id=uid)[0]
+        total, types = self.get_money_info(_model.money_id)
         money.money_type.data = types
         money.price.data = total
         _data.pop('date'), _data.pop('money_id')
@@ -96,11 +98,11 @@ class ModifyPage(object):
         form.customer_id.data = _model.customer_id
         return form, money, date, name_id
 
-    def GetRollOutPage(self, productionId):
+    def get_roll_out_page(self, uid):
         form = _getForm("RollOut")
-        _data = self.GetCellData("rollout", productionId)
+        _data = self.get_cell_data("rollout", uid)
         date = _data['date']
-        _model = dataUtil.getModel(_getOper("rollout"), id=productionId)[0]
+        _model = dataUtil.getModel(_getOper("rollout"), id=uid)[0]
         _data.pop('date')
         formUtil.setFormData(form, _data)
         name_id = "%s@%s" % (_model.stock.name, _model.stock.id)

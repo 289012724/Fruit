@@ -38,7 +38,7 @@ class InitPage(object):
         return False
 
     @staticmethod
-    def get_user_choice(self, user_type):
+    def get_user_choice(user_type):
         if user_type.lower() == 'supporter':
             model = dataUtil.GetDataByUrl("SupportChoice", "User")()
         elif user_type.lower() == 'customer':
@@ -61,7 +61,7 @@ class InitPage(object):
         return None, form, date
 
     @staticmethod
-    def get_sell_count(self):
+    def get_sell_count():
         """
         @attention: 获取可卖数量,以及销售的指导价格
         @note:  退过的货品也可以再销售
@@ -78,7 +78,7 @@ class InitPage(object):
         return _data
 
     @staticmethod
-    def get_stocks(self):
+    def get_stocks():
         """
         @attention: 获取当前正在销售的商品信息
         """
@@ -89,12 +89,12 @@ class InitPage(object):
         return []
 
     @staticmethod
-    def get_sell_stock(self):
+    def get_sell_stock():
         stock_name_and_id = False
         return stock_name_and_id
 
     @staticmethod
-    def get_money_page(self):
+    def get_money_page():
         """
         @attention: 获取退货以及销售过程中的金钱交易数据
         """
@@ -146,7 +146,7 @@ class InitPage(object):
         return []
 
     @staticmethod
-    def add_money(self, form, add=False):
+    def add_money(form, add=False):
         """
         @attention: 添加付款信息
         """
@@ -175,7 +175,7 @@ class InitPage(object):
             return model[0].id
 
     @staticmethod
-    def _get_user_by_name(self, username):
+    def _get_user_by_name(username):
         """
         @attention: 通过名字获取ID编号
         """
@@ -185,7 +185,7 @@ class InitPage(object):
         return data.get('id')
 
     @staticmethod
-    def _get_user_by_id(self, uid):
+    def _get_user_by_id(uid):
         """
         @attention: 通过ID编号获取名字
         """

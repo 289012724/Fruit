@@ -43,7 +43,7 @@ class InitPage:
         return False
 
     @staticmethod
-    def get_bill_date(self, date):
+    def get_bill_date(date):
         """
         @attention: 生产单的唯一标记号
         @param date: 时间节点
@@ -61,7 +61,7 @@ class InitPage:
         return data
 
     @staticmethod
-    def get_customer_choices(self):
+    def get_customer_choices():
         """
         @attention: 获取用户选择项目
         """
@@ -107,7 +107,7 @@ class InitPage:
                 self.error = dataUtil.ResError(u"保存数据失败")
 
     @staticmethod
-    def _adjust_bill(self, current_user, current_date, old_user, old_date):
+    def _adjust_bill(current_user, current_date, old_user, old_date):
         return _BillService.update_all_by_next(current_user, current_date, old_user, old_date)
 
     def get_model_bill_id(self, model):
@@ -130,7 +130,7 @@ class InitPage:
             self.error = dataUtil.ResError(u"更新数据失败")
 
     @staticmethod
-    def get_model_date(self, model):
+    def get_model_date(model):
         try:
             return model.date.strftime("%Y-%m-%d")
         except:
@@ -140,7 +140,7 @@ class InitPage:
                 return "%s" % model.date
 
     @staticmethod
-    def _has_bill(self, user_id, date):
+    def _has_bill(user_id, date):
         return _BillService.has_bill(user_id, date)
 
     def dispatcher(self, _ses, model, old_user, date):
@@ -226,7 +226,7 @@ class InitPage:
         return flag, form, date
 
     @staticmethod
-    def _get_moth_day(self, current):
+    def _get_moth_day(current):
         year, moth = [int(c) for c in current.split("-")][:-1]
         if moth > 3:
             moth = int(moth) - 3
@@ -259,7 +259,7 @@ class InitPage:
         return []
 
     @staticmethod
-    def _adjust_bill_money(self, _ses, model):
+    def _adjust_bill_money(_ses, model):
         bill = model.bill
         bill.next_money -= model.money_price
         bill.level_money = bill.total_money - bill.next_money
@@ -313,7 +313,7 @@ class InitPage:
         return form
 
     @staticmethod
-    def __get_modify_model(self, operate_type, uid):
+    def __get_modify_model(operate_type, uid):
         """
         @attention: 获取修正对象的数据和模型
         @param operate_type: 修正的类型
@@ -325,7 +325,7 @@ class InitPage:
         return operate, _data, _model
 
     @staticmethod
-    def _get_modify_form(self, operate, _model, _data, form):
+    def _get_modify_form(operate, _model, _data, form):
         """
         @attention: 获取修改页面
         """
