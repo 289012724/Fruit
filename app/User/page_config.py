@@ -20,7 +20,7 @@ user = [
 ]
 
 
-def addCenter(cell):
+def _center(cell):
     for _c in cell:
         if _c.get("field") == "id":
             _c.update({'hidden': True})
@@ -29,6 +29,6 @@ def addCenter(cell):
 
 
 page_table_configs = {
-    "department": addCenter(department),
-    "user": addCenter(user),
+    "department": _center(department),
+    "user": _center(user),
 }

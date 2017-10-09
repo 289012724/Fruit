@@ -13,7 +13,7 @@ from ..common import md5_data
 from flask_login import UserMixin
 
 
-class department(db.Model):
+class Department(db.Model):
     __tablename__ = 'fruit_departments'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(120), unique=True)
@@ -27,7 +27,7 @@ class department(db.Model):
         return '%r-%r' % (self.name, self.description)
 
 
-class user(db.Model, UserMixin):
+class User(db.Model, UserMixin):
     __tablename__ = 'fruit_users'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(120))

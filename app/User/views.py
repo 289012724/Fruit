@@ -45,7 +45,7 @@ def load_init_moth():
 
 
 @User.route("/modifyDate", methods=['POST', 'GET'])
-def modifyDate():
+def modify_date():
     date = request.form.get("date")
     session[current_user.username] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                                    dataUtil.TimestampToStruct(dataUtil.MakeTime(date)))

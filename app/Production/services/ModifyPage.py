@@ -7,7 +7,7 @@
 from InitPage import dataUtil, formUtil
 from functools import partial
 
-_getOper = partial(dataUtil.getDataBase, blueprint="Production")
+_getOperate = partial(dataUtil.getDataBase, blueprint="Production")
 _getForm = partial(formUtil.getForm, blueprint="Production")
 
 
@@ -22,7 +22,7 @@ class ModifyPage(object):
         @param operate_type:操作类型
         @param uid:产品编号  
         """
-        operate = _getOper(operate_type)
+        operate = _getOperate(operate_type)
         model = operate.get(id=uid)[-1]
         _data = operate.get_data(model, True)[-1]
         if not _data:
@@ -53,7 +53,7 @@ class ModifyPage(object):
 
     @staticmethod
     def get_money_info(uid):
-        models = dataUtil.getModel(_getOper("money"), id=uid)
+        models = dataUtil.getModel(_getOperate("money"), id=uid)
         total = 0
         types = u'现金'
         if models:
@@ -69,7 +69,7 @@ class ModifyPage(object):
         money.money_type.choices = [(idx, cell) for idx, cell in enumerate(money_type)]
         _data = self.get_cell_data("sell", uid)
         date = _data['date']
-        _model = dataUtil.getModel(_getOper("sell"), id=uid)[0]
+        _model = dataUtil.getModel(_getOperate("sell"), id=uid)[0]
         total, types = self.get_money_info(_model.money_id)
         money.money_type.data = types
         money.price.data = total
@@ -87,7 +87,7 @@ class ModifyPage(object):
         money.money_type.choices = [(idx, cell) for idx, cell in enumerate(money_type)]
         _data = self.get_cell_data("rollback", uid)
         date = _data['date']
-        _model = dataUtil.getModel(_getOper("rollback"), id=uid)[0]
+        _model = dataUtil.getModel(_getOperate("rollback"), id=uid)[0]
         total, types = self.get_money_info(_model.money_id)
         money.money_type.data = types
         money.price.data = total
@@ -102,7 +102,7 @@ class ModifyPage(object):
         form = _getForm("RollOut")
         _data = self.get_cell_data("rollout", uid)
         date = _data['date']
-        _model = dataUtil.getModel(_getOper("rollout"), id=uid)[0]
+        _model = dataUtil.getModel(_getOperate("rollout"), id=uid)[0]
         _data.pop('date')
         formUtil.setFormData(form, _data)
         name_id = "%s@%s" % (_model.stock.name, _model.stock.id)

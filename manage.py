@@ -9,7 +9,7 @@
 @time: 2016/7/6 0006
 """
 from app import app, database
-from app.User.models import department, user
+from app.User.models import Department, User
 from flask_script import Manager, Shell
 from app.User.modelOperates import UserOperate, DepartmentOperate
 

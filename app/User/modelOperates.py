@@ -17,7 +17,7 @@ class UserOperate(BaseOperate):
     def __init__(self):
         BaseOperate.__init__(self)
         self.Column = ['username', 'password', 'telephone', 'department_id', "state"]
-        self.Model = models.user
+        self.Model = models.User
 
     def _get_row(self, model, _key):
         _row = []
@@ -48,7 +48,7 @@ class DepartmentOperate(BaseOperate):
     def __init__(self):
         BaseOperate.__init__(self)
         self.Column = ['name', 'description']
-        self.Model = models.department
+        self.Model = models.Department
 
     def get_users(self, id=None):
         if id is None:
